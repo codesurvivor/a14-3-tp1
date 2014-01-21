@@ -3,6 +3,7 @@
 #include <systemc.h>
 
 #include <traffic/traffic_generator.h>
+//#include <arbiter/arbiter.h>
 
 int sc_main(int argc, char** argv)
 {
