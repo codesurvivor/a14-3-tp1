@@ -5,7 +5,7 @@ file(GLOB HEADER
   "../../include/*/*.hpp"
   "./*.h"
   "./*.hpp")
-file(GLOB SOURCE "./*.cpp")
+file(GLOB SOURCE "./*.cpp" "../*.cpp")
 
 add_executable(traffic_test ${HEADER} ${SOURCE})
 target_link_libraries(traffic_test systemc pthread)
