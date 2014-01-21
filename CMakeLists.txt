@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_BUILD_TYPE DEBUG)
 set(CMAKE_COLOR_MAKEFILE ON)
-option(BUILD_TESTS "Build the tests." OFF)
+option(BUILD_TESTS "Build the tests." ON)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)

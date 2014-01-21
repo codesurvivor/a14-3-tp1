@@ -2,18 +2,12 @@
 
 #include <systemc.h>
 
-#include <fir/fir.hpp>
-
-#include "stimulus.hpp"
-#include "display.hpp"
-
-#ifndef FIR_SIZE
-# define FIR_SIZE 13
-#endif // FIR_SIZE
-
+#include <traffic/traffic_generator.h>
 
 int sc_main(int argc, char** argv)
 {
+  abstract_traffic_generator* tg1 = new stream_generator("stream_generator");
+  abstract_traffic_generator* tg2 = new burst_generator("burst_generator");
   return 0;
 }
 
