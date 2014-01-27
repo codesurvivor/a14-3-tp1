@@ -4,11 +4,12 @@
 
 
 struct abstract_traffic_generator
+    : public ::sc_core::sc_module
 {
-  sc_in<bool> clock;
-  sc_out<bool> activated;
-  sc_out<uint8_t> address;
-  sc_out<int> data;
+  sc_core::sc_in<bool> clock;
+  sc_core::sc_out<bool> activated;
+  sc_core::sc_out<uint8_t> address;
+  sc_core::sc_out<int> data;
 
   // Set the address range of the emmited packages.
   inline void set_address_range(uint8_t min, uint8_t max)
@@ -53,7 +54,6 @@ private:
 
 class stream_generator
   : public abstract_traffic_generator
-  , public ::sc_core::sc_module
 {
   unsigned _current_cycle_mod;
   unsigned _period;
@@ -94,7 +94,6 @@ public:
 
 class burst_generator
   : public abstract_traffic_generator
-  , public ::sc_core::sc_module
 {
   unsigned _current_long_cycle_mod, _current_short_cycle_mod;
   unsigned _long_period, _short_period, _burst_length;

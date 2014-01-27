@@ -1,3 +1,6 @@
+#ifndef _ARBITER_ARBITER_H_
+#define _ARBITER_ARBITER_H_
+
 #include <systemc>
 #define NB_FIFO 4
 #define FIFO_SIZE 8
@@ -12,9 +15,9 @@ enum arbiterMode {RAND, LRU, FIFO, FIXED, ROUNDROBIN};
 
 SC_MODULE(out4)
 {
-	sc_fifo<Packet> f[4];
-	sc_in<bool> clk;
-	sc_in<int> arbType;
+  sc_fifo<Packet> f[4];
+  sc_in<bool> clk;
+  sc_in<int> arbType;
 
     // For Rand Mode
     int lfsr;
@@ -55,12 +58,12 @@ SC_MODULE(out4)
     char chooseLru()
     {
         for(int i = 0; i < NB_FIFO; i++)
-	    {
+      {
             if(f[LruIndex[i]].num_available() > 0 )
-		    {
+        {
                 return LruIndex[i];
-		    }
-	    }
+        }
+      }
 
         return -1;
     }
@@ -70,7 +73,7 @@ SC_MODULE(out4)
         bool found = false;
 
         for(int i = 0; i < NB_FIFO-1; i++)
-	    {
+      {
             if (found)
             {
                 LruIndex[i-1] = LruIndex[i];
@@ -79,7 +82,7 @@ SC_MODULE(out4)
             {
                 found = true;
             }
-	    }
+      }
 
         LruIndex[NB_FIFO-1] = numFifo;
     }
@@ -151,12 +154,12 @@ SC_MODULE(out4)
     char chooseFixed()
     {
         for(int i = 0; i < 4; i++)
-	    {
+      {
             if(f[i].num_available() > 0 )
-	    	{
-	    		return i;			
-	    	}
-	    }
+        {
+          return i;
+        }
+      }
 
         return -1;
     }
@@ -171,12 +174,12 @@ SC_MODULE(out4)
     char chooseRoundRobin()
     {
         for(int i = 0; i < 4; i++)
-	    {
+      {
             if(f[(lastUsed + 1 + i)%4].num_available() > 0 )
-		    {
-		    	return (lastUsed + 1 + i)%4;			
-		    }
-	    }
+        {
+          return (lastUsed + 1 + i)%4;
+        }
+      }
 
         return -1;
     }
@@ -189,31 +192,31 @@ SC_MODULE(out4)
 
     // Core functions
 
-	void process()
-	{
+  void process()
+  {
         const int type = arbType.read();
         char choice = -1;
 
-		switch(type)
-		{
-			case RAND :
+    switch(type)
+    {
+      case RAND :
                 choice = chooseRand();
-				break;
-			case LRU :
+        break;
+      case LRU :
                 choice = chooseLru();
-				break;
-			case FIFO :
+        break;
+      case FIFO :
                 choice = chooseFifo();
-				break;
-			case FIXED :
+        break;
+      case FIXED :
                 choice = chooseFixed();
-				break;
-			case ROUNDROBIN :
+        break;
+      case ROUNDROBIN :
                 choice = chooseRoundRobin();
-				break;
-			default:
-				break;
-		}
+        break;
+      default:
+        break;
+    }
 
         if (choice == -1)
         {
@@ -223,7 +226,7 @@ SC_MODULE(out4)
         //TODO :read
 
         update(choice);
-	}
+  }
 
     void update(char numFifo)
     {
@@ -233,14 +236,14 @@ SC_MODULE(out4)
         updateRoundRobin(numFifo);
     }
 
-	SC_CTOR(out4)
-	{
+  SC_CTOR(out4)
+  {
         initLru();
         initFifo();
         initRoundRobin();
 
-		SC_METHOD(process);
-		sensitive << clk.pos();
+    SC_METHOD(process);
+    sensitive << clk.pos();
 
         SC_METHOD(pushedInFifo0);
         sensitive << f[0].data_written_event();
@@ -253,9 +256,7 @@ SC_MODULE(out4)
 
         SC_METHOD(pushedInFifo3);
         sensitive << f[3].data_written_event();
-	}
+  }
 };
 
-
-
-
+#endif // _ARBITER_ARBITER_H_

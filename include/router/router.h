@@ -1,75 +1,104 @@
-#ifndef ROUTER_H
-#define ROUTER_H
+#ifndef _ROUTER_ROUTER_H_
+#define _ROUTER_ROUTER_H_
 
-#define Router_input_ports 1
-#define Router_output_ports 4
-
-#include <systemc.h>
 #include <list>
+#include <sstream>
+#include <memory>
 
-// an empty packet has src_x == src_y == dest_x == dest_y == -1
+#include <systemc>
 
-struct packet
+class packet;
+class abstract_routing_policy;
+
+class router
+    : ::sc_core::sc_module
 {
-    int Addr;
-    int data;
-    int activated;
+public:
+  typedef router SC_CURRENT_USER_MODULE;
 
-    packet(int Ad = -1, int data = -1)
-        : Addr(Ad),data(data) , activated(activated)
+  /// Port for the global clock.
+  sc_core::sc_in<bool> clock;
+
+  /// Input activation port.
+  sc_core::sc_in<bool>* activated_in;
+
+  /// Address input.
+  sc_core::sc_in<uint8_t>* address_in;
+
+  /// Data input.
+  sc_core::sc_in<int>* data_in;
+
+  /// Internal FIFO.
+  sc_core::sc_fifo<packet>* fifo;
+
+  /// Output activation port.
+  sc_core::sc_out<bool>* activated_out;
+
+  /// Address output.
+  sc_core::sc_out<uint8_t>* address_out;
+
+  /// Data output.
+  sc_core::sc_out<int>* data_out;
+
+  /// Specify the functionality of router per clock cycle.
+  void main(void);
+
+  template <unsigned _Input, unsigned _Output, unsigned _Depth, typename _Policy>
+  router(::sc_core::sc_module_name name)
+    : _x(-1)
+    , _y(-1)
+    , _router_input_ports(_Input)
+    , _router_output_ports(_Output)
+    , _fifo_depth(_Depth)
+    , _policy(std::unique_ptr<abstract_routing_policy>(new _Policy))
+  {
+    SC_METHOD(main);
+
+    sensitive << clock.pos();
+
+    activated_in = new sc_core::sc_in<bool>   [_Input];
+    data_in      = new sc_core::sc_in<int>    [_Input];
+    address_in   = new sc_core::sc_in<uint8_t>[_Input];
+
+    activated_out = new sc_core::sc_out<bool>   [_Output];
+    data_out      = new sc_core::sc_out<int>    [_Output];
+    address_out   = new sc_core::sc_out<uint8_t>[_Output];
+
+    for (unsigned i = 0; i < _Input; ++i)
     {
+      std::stringstream ss;
+      ss << "fifo" << i;
+      fifo[i].~sc_fifo();
+      new(&fifo[i]) sc_core::sc_fifo<int>(ss.str().c_str(), _Depth);
     }
+  }
 
-}; // struct packet
+  /// Use this function to set the coordinates of the router.
+  void set_xy(int x, int y);
 
+protected:
 
-SC_MODULE(router)
-{
-    sc_in<bool> clock; // port for the global clock
-    sc_in<bool> activated[Router_input_ports ] ;
-    sc_in<uint8_t> address[Router_input_ports ] ;
-    sc_in<int> data[Router_input_ports ] ;
-    // sc_in<packet> port_in[1]; // input ports
-    // sc_out<packet> port_out[4]; // output ports
-    //sc_out<uint8_t> address[Router_input_ports ] ;
-    //sc_out<int> data[Router_input_ports ] ;
+  /// Read a packet from the link.
+  void read_packet(int iport);
 
-    int fifo_out_depth;
+  /// Transmit a packet to the output.
+  void write_packet(int iport);
 
-    sc_fifo<uint8_t > 		*address[Router_input_ports ];
-    sc_fifo<int > 		*data[Router_input_ports ];
+  /// Location of the router.
+  int _x, _y;
 
-    void main(); // specify the functionality of router per clock cycle
+  /// Size of the FIFOs.
+  unsigned _fifo_depth;
 
-    //  SC_CTOR(router)
-    router(sc_module_name name, int fifo_out_depth_,sc_trace_file *F):sc_module(name)
-      : x_(-1), y_(-1)
-    {
-        fifo_out_depth	=	fifo_out_depth_;
-        fifo_in		=	new sc_fifo<int > ("fifo_in",fifo_in_depth_);
+  std::unique_ptr<abstract_routing_policy> _policy;
 
-        fifo_out_depth	=	fifo_out_depth_;
-        fifo_out	=	new sc_fifo<int > ("fifo_out",fifo_out_depth_);
+private:
 
-        SC_METHOD(main);
-        sensitive << clock.pos();
-    }
+  /// Number of input ports.
+  const unsigned _router_input_ports;
 
-    // use this function to set the coordinates of the router
-    void set_xy(int x, int y);
-
-
-    void getQueueSize(int * size);
-
-
-    protected:
-    //std::list<int> out_data_queue_[Router_output_ports]; // data output queues
-    //std::list<int> out_addr_queue_[Router_output_ports]; // addr output queues
-
-    int x_, y_; // location of the router
-
-    void read_packet(int iport); // read a packet from the link
-    void route_packet_xy(packet p); // route the packet to the output queue
+  /// Number of ouput ports.
+  const unsigned _router_output_ports;
 }; // router
 
-#endif // ROUTER_H
+#endif // _ROUTER_ROUTER_H_

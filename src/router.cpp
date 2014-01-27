@@ -1,78 +1,59 @@
-#include "router.h"
-#define Router_input_ports 1
-#define Router_output_ports 4
+#include <router/router.h>
 
-void router::main()
+#include <cassert>
+
+#include <router/packet.h>
+#include <router/policy.h>
+
+
+void router::main(void)
 {
-        
-        assert((x_ != -1) && (y_ != -1)); // to identify PE
+  // To identify PE.
+  assert(_x != -1);
+  assert(_y != -1);
 
-        for (int iport = 0; iport < Router_input_ports ; ++iport)
-                read_packet(iport);
+  for (int iport = 0; iport < _router_input_ports; ++iport)
+    if (activated_in[iport].read())
+      read_packet(iport);
+
+  int choice = _policy->choose();
+  if (choice != -1)
+    write_packet(choice);
 }
+
 
 void router::set_xy(int x, int y)
 {
-        assert((x_ == -1) && (y_ == -1)); // set once only
-        assert((x != -1) && (y != -1)); // must use a legal location
+  // Set once only.
+  assert(_x == -1);
+  assert(_y == -1);
 
-        x_ = x;
-        y_ = y;
+  // Must use a legal location.
+  assert(x != -1);
+  assert(y != -1);
+
+  _x = x;
+  _y = y;
 }
+
 
 void router::read_packet(int iport)
 {
-        assert(iport < Router_input_ports);
-	packet p.activated = activated[iport].read();
-        packet p.data = data[iport].read();
-	 packet p.Addr = address[iport].read();
+  assert(iport < _router_input_ports);
 
-        if ((p.Addr == -1)||(p.activated =! 1 ))
-                return; // empty packet
+  packet p;
+  p.data      = data_in[iport].read();
+  p.address   = address_in[iport].read();
 
-        route_packet_xy(p);
-  
+  fifo[p.address].write(p);
 }
 
 
-void router::route_packet_xy(packet p)
+void router::write_packet(int iport)
 {
-        if ((p.Addr == -1) )
-        {
-                printf("router (%d,%d): drop packet with invalid destination"
-                        " (%d,%d)->(%d,%d)\n",
-                        p.Addr);
-                return;
-        }
+  assert(iport < _router_input_ports);
 
-        if (p.Addr == 1) 
-        {
-                out_addr_queue_[1].push_back(p.Addr);
-		out_data_queue_[1].push_back(p.data);
-        }
-        else if (p.Addr == 2) /
-        {
-                out_addr_queue_[2].push_back(p.Addr);
-		out_data_queue_[2].push_back(p.data);
-        }
-	else if (p.Addr == 3) /
-        {
-                out_addr_queue_[3].push_back(p.Addr);
-		out_data_queue_[3].push_back(p.data);
-        }
-        else 
-        {
-                out_addr_queue_[Router_output_ports].push_back(p.Addr);
-		out_data_queue_[Router_output_ports].push_back(p.data);
-        }
+  packet p = fifo[iport].read();
+  data_out[p.address].write(p.data);
+  address_out[p.address].write(p.address);
 }
-
-
-void router::getQueueSize(int * size)
-{
-                for(int i = 0;i<Router_output_ports;i++)
-        {
-                size[i] = (int)out_data_queue_[i].size();
-        }
-}
-
