@@ -3,7 +3,6 @@
 #include <cassert>
 
 #include <router/packet.h>
-#include <router/policy.h>
 
 
 void router::main(void)
@@ -15,10 +14,6 @@ void router::main(void)
   for (int iport = 0; iport < _router_input_ports; ++iport)
     if (activated_in[iport].read())
       read_packet(iport);
-
-  int choice = _policy->choose();
-  if (choice != -1)
-    write_packet(choice);
 }
 
 
@@ -48,12 +43,3 @@ void router::read_packet(int iport)
   fifo[p.address].write(p);
 }
 
-
-void router::write_packet(int iport)
-{
-  assert(iport < _router_input_ports);
-
-  packet p = fifo[iport].read();
-  data_out[p.address].write(p.data);
-  address_out[p.address].write(p.address);
-}
