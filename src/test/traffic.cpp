@@ -1,18 +1,19 @@
 #include <sstream>
+#include <memory>
 
 #include <systemc>
 
-#include <traffic/traffic_generator.h>
+#include <noc/traffic_generator.h>
 
 
-int sc_main(int argc, char** argv)
+int sc_main(int, char**)
 {
-  stream_generator* tg1 = new stream_generator("stream_generator");
+  auto tg1 = std::make_shared<noc::stream_generator>("stream_generator");
   tg1->set_address_range(10, 100);
   tg1->set_period(10);
-  burst_generator* tg2 = new burst_generator("burst_generator");
+  auto tg2 = std::make_shared<noc::burst_generator>("burst_generator");
   tg2->set_address_range(2, 10);
-  tg2->set_burst(100, 2, 10);
+  tg2->set_burst(100, 5, 20);
 
   sc_core::sc_clock clock;
   tg1->clock(clock);
@@ -33,13 +34,15 @@ int sc_main(int argc, char** argv)
   sc_core::vcd_trace_file* const file =
       (sc_core::vcd_trace_file*) sc_core::sc_create_vcd_trace_file("output");
 
+  sc_core::sc_trace(file, clock         , "clock"         );
+
   sc_core::sc_trace(file, tg1->activated, "stream_active" );
   sc_core::sc_trace(file, tg1->address  , "stream_address");
   sc_core::sc_trace(file, tg1->data     , "stream_data"   );
 
-  sc_core::sc_trace(file, tg2->activated, "burst_active" );
-  sc_core::sc_trace(file, tg2->address  , "burst_address");
-  sc_core::sc_trace(file, tg2->data     , "burst_data"   );
+  sc_core::sc_trace(file, tg2->activated, "burst_active"  );
+  sc_core::sc_trace(file, tg2->address  , "burst_address" );
+  sc_core::sc_trace(file, tg2->data     , "burst_data"    );
 
   sc_core::sc_start(1000, sc_core::SC_NS);
 

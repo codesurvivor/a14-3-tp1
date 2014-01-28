@@ -7,6 +7,10 @@
 
 #include <systemc>
 
+
+namespace noc
+{
+
 class packet;
 class abstract_routing_policy;
 
@@ -75,5 +79,7 @@ private:
   /// Number of ouput ports.
   const unsigned _router_output_ports;
 }; // router
+
+} // noc
 
 #endif // _ROUTER_ROUTER_H_

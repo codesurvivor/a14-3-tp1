@@ -1,28 +1,23 @@
-#include <router/router.h>
+#include <noc/router.h>
 
 #include <cassert>
 
-#include <router/packet.h>
+#include <noc/packet.h>
+
+
+namespace noc
+{
 
 
 void router::main(void)
 {
-   bool test;
   // To identify PE.
   assert(_x != -1);
   assert(_y != -1);
 
-  //next_trigger();
-
   for (int iport = 0; iport < _router_input_ports; ++iport)
-  {
-    test = activated_in[iport].read() ;
-    if (test)
-    {
-      //next_trigger();
+    if (activated_in[iport].read())
       read_packet(iport);
-    }
-  }
 }
 
 
@@ -52,3 +47,5 @@ void router::read_packet(int iport)
   fifo[p.address].write(p);
 }
 
+
+} // noc
