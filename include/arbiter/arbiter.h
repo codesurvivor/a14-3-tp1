@@ -15,9 +15,10 @@ enum arbiterMode {RAND, LRU, FIFO, FIXED, ROUNDROBIN};
 
 SC_MODULE(out4)
 {
-  sc_fifo<Packet> f[4];
-  sc_in<bool> clk;
-  sc_in<int> arbType;
+    sc_fifo<Packet> f[NB_FIFO];
+    sc_in<bool> clk;
+    sc_in<int> arbType;
+    sc_out<Packet> out[NB_FIFO];
 
     // For Rand Mode
     int lfsr;
@@ -58,12 +59,12 @@ SC_MODULE(out4)
     char chooseLru()
     {
         for(int i = 0; i < NB_FIFO; i++)
-      {
-            if(f[LruIndex[i]].num_available() > 0 )
         {
+            if(f[LruIndex[i]].num_available() > 0 )
+            {
                 return LruIndex[i];
+            }
         }
-      }
 
         return -1;
     }
@@ -73,7 +74,7 @@ SC_MODULE(out4)
         bool found = false;
 
         for(int i = 0; i < NB_FIFO-1; i++)
-      {
+        {
             if (found)
             {
                 LruIndex[i-1] = LruIndex[i];
@@ -82,7 +83,7 @@ SC_MODULE(out4)
             {
                 found = true;
             }
-      }
+        }
 
         LruIndex[NB_FIFO-1] = numFifo;
     }
@@ -154,12 +155,12 @@ SC_MODULE(out4)
     char chooseFixed()
     {
         for(int i = 0; i < 4; i++)
-      {
-            if(f[i].num_available() > 0 )
         {
-          return i;
+            if(f[i].num_available() > 0 )
+            {
+                return i;
+            }
         }
-      }
 
         return -1;
     }
@@ -168,18 +169,18 @@ SC_MODULE(out4)
 
     void initRoundRobin()
     {
-        lastUsed = NB_FIFO-1;
+        lastUsed = NB_FIFO - 1;
     }
 
     char chooseRoundRobin()
     {
         for(int i = 0; i < 4; i++)
-      {
-            if(f[(lastUsed + 1 + i)%4].num_available() > 0 )
         {
-          return (lastUsed + 1 + i)%4;
+            if(f[(lastUsed + 1 + i)%4].num_available() > 0 )
+            {
+                return (lastUsed + 1 + i)%4;
+            }
         }
-      }
 
         return -1;
     }
@@ -192,41 +193,42 @@ SC_MODULE(out4)
 
     // Core functions
 
-  void process()
-  {
+    void process()
+    {
         const int type = arbType.read();
         char choice = -1;
 
-    switch(type)
-    {
-      case RAND :
-                choice = chooseRand();
-        break;
-      case LRU :
-                choice = chooseLru();
-        break;
-      case FIFO :
-                choice = chooseFifo();
-        break;
-      case FIXED :
-                choice = chooseFixed();
-        break;
-      case ROUNDROBIN :
-                choice = chooseRoundRobin();
-        break;
-      default:
-        break;
-    }
+        switch(type)
+        {
+        case RAND :
+            choice = chooseRand();
+            break;
+        case LRU :
+            choice = chooseLru();
+            break;
+        case FIFO :
+            choice = chooseFifo();
+            break;
+        case FIXED :
+            choice = chooseFixed();
+            break;
+        case ROUNDROBIN :
+            choice = chooseRoundRobin();
+            break;
+        default:
+            break;
+        }
 
         if (choice == -1)
         {
             return;
         }
 
-        //TODO :read
+        Packet packet = f[choice].read();
+        out[packet.address].write(packet);
 
         update(choice);
-  }
+    }
 
     void update(char numFifo)
     {
@@ -236,14 +238,14 @@ SC_MODULE(out4)
         updateRoundRobin(numFifo);
     }
 
-  SC_CTOR(out4)
-  {
+    SC_CTOR(out4)
+    {
         initLru();
         initFifo();
         initRoundRobin();
 
-    SC_METHOD(process);
-    sensitive << clk.pos();
+        SC_METHOD(process);
+        sensitive << clk.pos();
 
         SC_METHOD(pushedInFifo0);
         sensitive << f[0].data_written_event();
@@ -256,7 +258,7 @@ SC_MODULE(out4)
 
         SC_METHOD(pushedInFifo3);
         sensitive << f[3].data_written_event();
-  }
+    }
 };
 
 #endif // _ARBITER_ARBITER_H_
