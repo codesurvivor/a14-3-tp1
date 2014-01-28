@@ -30,101 +30,39 @@ SC_MODULE(arbiter)
     char lastUsed;
 
     // Rand Mode
-    char chooseRand()
-    {
-        return (lfsr >> 15)%2 + 2 * ((lfsr >> 23)%2);
-    }
-
-    void updateRand(char numFifo)
-    {
-        int retro = ((lfsr>>1) + (lfsr>>6) + (lfsr>>16))%2;
-        lfsr = (lfsr << 1) + retro;
-    }
+    char chooseRand();
+    void updateRand(char numFifo);
 
     // LRU Mode
-
-    void initLru()
-    {
-        for(int i = 0; i < NB_FIFO; ++i)
-        {
-            LruIndex[i] = i;
-        }
-    }
-
-    char chooseLru()
-    {
-        for(int i = 0; i < NB_FIFO; i++)
-        {
-            if(f[LruIndex[i]].num_available() > 0 )
-            {
-                return LruIndex[i];
-            }
-        }
-
-        return -1;
-    }
-
-    void updateLru(char numFifo)
-    {
-        bool found = false;
-
-        for(int i = 0; i < NB_FIFO-1; i++)
-        {
-            if (found)
-            {
-                LruIndex[i-1] = LruIndex[i];
-            }
-            else if (LruIndex[i] == numFifo)
-            {
-                found = true;
-            }
-        }
-
-        LruIndex[NB_FIFO-1] = numFifo;
-    }
+    void initLru();
+    char chooseLru();
+    void updateLru(char numFifo);
 
     // FIFO Mode
+    void initFifo();
+    int chooseFifo();
+    void updateFifo(unsigned char numFifo);
+    void pushedInFifo(char idFifo);
 
-    void initFifo()
+    // Fixed Mode
+    char chooseFixed();
+
+    // Round Robin Mode
+    void initRoundRobin();
+    char chooseRoundRobin();
+    void updateRoundRobin(char numFifo);
+
+    // Core functions
+    void process();
+    void update(char numFifo)
     {
-        inFifos = 0;
+        updateRand(numFifo);
+        updateLru(numFifo);
+        updateFifo(numFifo);
+        updateRoundRobin(numFifo);
     }
 
-    int chooseFifo()
-    {
-        if (inFifos == 0)
-        {
-            return -1;
-        }
-
-        return pushsInFifos[0];
-    }
-
-    void updateFifo(unsigned char numFifo)
-    {
-        bool found = false;
-
-        for (unsigned int i = 0; i < inFifos; ++i)
-        {
-            if (found)
-            {
-                pushsInFifos[i-1] = pushsInFifos[i];
-            }
-            else if (pushsInFifos[i] == numFifo)
-            {
-                found = true;
-            }
-        }
-
-        --inFifos;
-    }
-
-    void pushedInFifo(char idFifo)
-    {
-        pushsInFifos[inFifos] = idFifo;
-        ++inFifos;
-    }
-
+    //Dependencies
     void pushedInFifo0()
     {
         pushedInFifo(0);
@@ -145,96 +83,9 @@ SC_MODULE(arbiter)
         pushedInFifo(3);
     }
 
-    // Fixed Mode
-
-    char chooseFixed()
-    {
-        for(int i = 0; i < 4; i++)
-        {
-            if(f[i].num_available() > 0 )
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    // Round Robin Mode
-
-    void initRoundRobin()
-    {
-        lastUsed = NB_FIFO - 1;
-    }
-
-    char chooseRoundRobin()
-    {
-        for(int i = 0; i < 4; i++)
-        {
-            if(f[(lastUsed + 1 + i)%4].num_available() > 0 )
-            {
-                return (lastUsed + 1 + i)%4;
-            }
-        }
-
-        return -1;
-    }
-
-    void updateRoundRobin(char numFifo)
-    {
-        lastUsed = numFifo;
-    }
-
-
-    // Core functions
-
-    void process()
-    {
-        const int type = arbType.read();
-        char choice = -1;
-
-        switch(type)
-        {
-        case RAND :
-            choice = chooseRand();
-            break;
-        case LRU :
-            choice = chooseLru();
-            break;
-        case FIFO :
-            choice = chooseFifo();
-            break;
-        case FIXED :
-            choice = chooseFixed();
-            break;
-        case ROUNDROBIN :
-            choice = chooseRoundRobin();
-            break;
-        default:
-            break;
-        }
-
-        if (choice == -1)
-        {
-            return;
-        }
-
-        packet pack= f[choice].read();
-        out[pack.address].write(pack);
-
-        update(choice);
-    }
-
-    void update(char numFifo)
-    {
-        updateRand(numFifo);
-        updateLru(numFifo);
-        updateFifo(numFifo);
-        updateRoundRobin(numFifo);
-    }
-
     SC_CTOR(arbiter)
-    {initLru();
+    {
+        initLru();
         initFifo();
         initRoundRobin();
 
