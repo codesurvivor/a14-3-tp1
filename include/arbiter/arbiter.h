@@ -36,14 +36,13 @@ SC_MODULE(out4)
     // Rand Mode
     char chooseRand()
     {
-        //randomNumber = lfsr >> 28;
-        //TODO
+        return lfsr >> 30;
     }
 
     void updateRand(char numFifo)
     {
-        //int retro = 0; //TODO
-        //lfsr = (lfsr << 1);
+        int retro = ((lfsr>>1) + (lfsr>>6) + (lfsr>>16))%2;
+        lfsr = (lfsr << 1) + retro;
     }
 
     // LRU Mode
