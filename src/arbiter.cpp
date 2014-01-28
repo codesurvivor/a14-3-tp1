@@ -141,37 +141,44 @@ void arbiter::updateRoundRobin(char numFifo)
 
 void arbiter::process()
 {
-    const int type = arbType.read();
-    char choice = -1;
-
-    switch(type)
+    while (true)
     {
-    case RAND :
-        choice = chooseRand();
-        break;
-    case LRU :
-        choice = chooseLru();
-        break;
-    case FIFO :
-        choice = chooseFifo();
-        break;
-    case FIXED :
-        choice = chooseFixed();
-        break;
-    case ROUNDROBIN :
-        choice = chooseRoundRobin();
-        break;
-    default:
-        break;
+        wait();
+
+        const int type = arbType.read();
+        char choice = -1;
+
+        switch(type)
+        {
+        case RAND :
+            choice = chooseRand();
+            break;
+        case LRU :
+            choice = chooseLru();
+            break;
+        case FIFO :
+            choice = chooseFifo();
+            break;
+        case FIXED :
+            choice = chooseFixed();
+            break;
+        case ROUNDROBIN :
+            choice = chooseRoundRobin();
+            break;
+        default:
+            break;
+        }
+
+        choice_out.write((int)choice);
+
+        if (choice == -1)
+        {
+            continue;
+        }
+
+        packet pack= f[choice].read();
+        out.write(pack);
+
+        update(choice);
     }
-
-    if (choice == -1)
-    {
-        return;
-    }
-
-    packet pack= f[choice].read();
-    out.write(pack);
-
-    update(choice);
 }

@@ -13,24 +13,25 @@ SC_MODULE(packet_wrapper)
 
     void process()
     {
-        packs.write(packet(addr.read(), data.read()));
+        while(true)
+        {
+            wait();
+            packs.write(packet(addr.read(), data.read()));
+        }
     }
 
     SC_CTOR(packet_wrapper)
     {
-        SC_METHOD(process);
-        dont_initialize();
+        SC_THREAD(process);
         sensitive << clock.pos();
     }
 };
 
 int sc_main(int argc, char *argv[])
 {
-    sc_core::vcd_trace_file* const file =
-            (sc_core::vcd_trace_file*) sc_core::sc_create_vcd_trace_file("output");
-
     sc_core::sc_clock clock;
     sc_core::sc_signal<int> arbType;
+    sc_core::sc_signal<int> choice;
     sc_core::sc_signal<packet> out;
     sc_core::sc_fifo<packet> fifos[4];
 
@@ -42,6 +43,7 @@ int sc_main(int argc, char *argv[])
     ab->clock(clock);
     ab->arbType(arbType);
     ab->out(out);
+    ab->choice_out(choice);
 
     arbType.write(arbiterMode::FIXED);
 
@@ -50,24 +52,38 @@ int sc_main(int argc, char *argv[])
 
     for (int i=0; i < 4; ++i)
     {
-        tg[i] = new stream_generator("stream_generator");
-        tg[i]->set_address_range(10, 100);
-        tg[i]->set_period(10);
+        ab->f[i].bind(fifos[i]);
 
+        {
+            std::stringstream ss;
+            ss << "stream_generator" << i;
+
+            tg[i] = new stream_generator(ss.str().c_str());
+            tg[i]->set_address_range(10, 100);
+            tg[i]->set_period(10);
+        }
+
+        tg[i]->clock(clock);
         tg[i]->activated(stream_activated[i]);
         tg[i]->address(stream_addr[i]);
         tg[i]->data(stream_data[i]);
 
-        pw[i] = new packet_wrapper("packet_wrapper");
-        pw[i]->clock(clock);
-        pw[i]->addr(stream_addr[i]);
-        pw[i]->data(stream_data[i]);
-        pw[i]->packs(fifos[i]);
+        {
+            std::stringstream ss;
+            ss << "packet_wrapper" << i;
 
-        ab->f[i](fifos[i]);
+            pw[i] = new packet_wrapper(ss.str().c_str());
+            pw[i]->clock(clock);
+            pw[i]->addr(stream_addr[i]);
+            pw[i]->data(stream_data[i]);
+            pw[i]->packs(fifos[i]);
+        }
     }
 
-    sc_core::sc_trace(file, ab->out, "arbiter_out" );
+    sc_core::vcd_trace_file* const file =
+            (sc_core::vcd_trace_file*) sc_core::sc_create_vcd_trace_file("output");
+
+    sc_core::sc_trace(file, choice , "arbiter_choice" );
 
     sc_core::sc_start(1000, sc_core::SC_NS);
 

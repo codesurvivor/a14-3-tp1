@@ -15,6 +15,7 @@ SC_MODULE(arbiter)
     sc_core::sc_in<bool> clock;
     sc_core::sc_in<int> arbType;
     sc_core::sc_out<packet> out;
+    sc_core::sc_out<int> choice_out;
 
     // For Rand Mode
     int lfsr;
@@ -65,22 +66,38 @@ SC_MODULE(arbiter)
     //Dependencies
     void pushedInFifo0()
     {
-        pushedInFifo(0);
+        while(true)
+        {
+            wait(f[0].data_written_event());
+            pushedInFifo(0);
+        }
     }
 
     void pushedInFifo1()
     {
-        pushedInFifo(1);
+        while(true)
+        {
+            wait(f[1].data_written_event());
+            pushedInFifo(1);
+        }
     }
 
     void pushedInFifo2()
     {
-        pushedInFifo(2);
+        while(true)
+        {
+            wait(f[2].data_written_event());
+            pushedInFifo(2);
+        }
     }
 
     void pushedInFifo3()
     {
-        pushedInFifo(3);
+        while(true)
+        {
+            wait(f[3].data_written_event());
+            pushedInFifo(3);
+        }
     }
 
     SC_CTOR(arbiter)
@@ -89,20 +106,16 @@ SC_MODULE(arbiter)
         initFifo();
         initRoundRobin();
 
-        SC_METHOD(process);
+        SC_THREAD(process);
         sensitive << clock.pos();
-
-        SC_METHOD(pushedInFifo0);
-        sensitive << f[0].data_written_event();
-
-        SC_METHOD(pushedInFifo1);
-        sensitive << f[1].data_written_event();
-
-        SC_METHOD(pushedInFifo2);
-        sensitive << f[2].data_written_event();
-
-        SC_METHOD(pushedInFifo3);
-        sensitive << f[3].data_written_event();
+        SC_THREAD(pushedInFifo0);
+        sensitive << clock.pos();
+        SC_THREAD(pushedInFifo1);
+        sensitive << clock.pos();
+        SC_THREAD(pushedInFifo2);
+        sensitive << clock.pos();
+        SC_THREAD(pushedInFifo3);
+        sensitive << clock.pos();
     }
 };
 
