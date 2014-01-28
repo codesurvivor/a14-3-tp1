@@ -21,17 +21,13 @@ struct packet
 
 }; // struct packet
 
-std::ostream& operator<< (std::ostream& stream, packet const& p)
-{
-  stream << p.data << "@" << p.address;
-  return stream;
-}
+std::ostream& operator<< (std::ostream& stream, packet const& p);
 
 namespace sc_core
 {
 
 
-inline void sc_trace(sc_trace_file* file, ::packet const& pack, std::string& name)
+inline void sc_trace(sc_trace_file* file, ::packet const& pack, std::string const& name)
 {
   {
     std::ostringstream ss;
