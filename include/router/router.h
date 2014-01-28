@@ -34,22 +34,22 @@ public:
   /// Specify the functionality of router per clock cycle.
   void main(void);
 
-  template <unsigned _Input, unsigned _Output>
-  router(::sc_core::sc_module_name name)
+  router(::sc_core::sc_module_name name, unsigned input, unsigned output)
     : _x(-1)
     , _y(-1)
-    , _router_input_ports(_Input)
-    , _router_output_ports(_Output)
+    , _router_input_ports(input)
+    , _router_output_ports(output)
+
   {
     SC_METHOD(main);
 
     sensitive << clock.pos();
 
-    activated_in = new sc_core::sc_in<bool>   [_Input];
-    data_in      = new sc_core::sc_in<int>    [_Input];
-    address_in   = new sc_core::sc_in<uint8_t>[_Input];
+    activated_in = new sc_core::sc_in<bool>   [input];
+    data_in      = new sc_core::sc_in<int>    [input];
+    address_in   = new sc_core::sc_in<uint8_t>[input];
 
-    fifo = new sc_core::sc_fifo_out<int>[_Output];
+    fifo = new sc_core::sc_fifo_out<packet>[output];
   }
 
   /// Use this function to set the coordinates of the router.
