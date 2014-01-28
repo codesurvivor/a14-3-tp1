@@ -2,23 +2,19 @@
 #define _ARBITER_ARBITER_H_
 
 #include <systemc>
+#include "router/packet.h"
+
 #define NB_FIFO 4
 #define FIFO_SIZE 8
 
-struct Packet
-{
-    uint8_t address;
-    int data;
-};
-
 enum arbiterMode {RAND, LRU, FIFO, FIXED, ROUNDROBIN};
 
-SC_MODULE(out4)
+SC_MODULE(arbiter)
 {
-    sc_fifo<Packet> f[NB_FIFO];
-    sc_in<bool> clk;
-    sc_in<int> arbType;
-    sc_out<Packet> out[NB_FIFO];
+    sc_core::sc_fifo_in<packet> f[NB_FIFO];
+    sc_core::sc_in<bool> clk;
+    sc_core::sc_in<int> arbType;
+    sc_core::sc_out<packet> out[NB_FIFO];
 
     // For Rand Mode
     int lfsr;
@@ -36,7 +32,7 @@ SC_MODULE(out4)
     // Rand Mode
     char chooseRand()
     {
-        return lfsr >> 30;
+        return (lfsr >> 15)%2 + 2 * ((lfsr >> 23)%2);
     }
 
     void updateRand(char numFifo)
@@ -223,8 +219,8 @@ SC_MODULE(out4)
             return;
         }
 
-        Packet packet = f[choice].read();
-        out[packet.address].write(packet);
+        packet pack= f[choice].read();
+        out[pack.address].write(pack);
 
         update(choice);
     }
@@ -237,9 +233,8 @@ SC_MODULE(out4)
         updateRoundRobin(numFifo);
     }
 
-    SC_CTOR(out4)
-    {
-        initLru();
+    SC_CTOR(arbiter)
+    {initLru();
         initFifo();
         initRoundRobin();
 
