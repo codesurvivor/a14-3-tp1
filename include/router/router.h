@@ -29,28 +29,17 @@ public:
   sc_core::sc_in<int>* data_in;
 
   /// Internal FIFO.
-  sc_core::sc_fifo<packet>* fifo;
-
-  /// Output activation port.
-  sc_core::sc_out<bool>* activated_out;
-
-  /// Address output.
-  sc_core::sc_out<uint8_t>* address_out;
-
-  /// Data output.
-  sc_core::sc_out<int>* data_out;
+  sc_core::sc_fifo_out<packet>* fifo;
 
   /// Specify the functionality of router per clock cycle.
   void main(void);
 
-  template <unsigned _Input, unsigned _Output, unsigned _Depth, typename _Policy>
+  template <unsigned _Input, unsigned _Output>
   router(::sc_core::sc_module_name name)
     : _x(-1)
     , _y(-1)
     , _router_input_ports(_Input)
     , _router_output_ports(_Output)
-    , _fifo_depth(_Depth)
-    , _policy(std::unique_ptr<abstract_routing_policy>(new _Policy))
   {
     SC_METHOD(main);
 
@@ -60,17 +49,7 @@ public:
     data_in      = new sc_core::sc_in<int>    [_Input];
     address_in   = new sc_core::sc_in<uint8_t>[_Input];
 
-    activated_out = new sc_core::sc_out<bool>   [_Output];
-    data_out      = new sc_core::sc_out<int>    [_Output];
-    address_out   = new sc_core::sc_out<uint8_t>[_Output];
-
-    for (unsigned i = 0; i < _Input; ++i)
-    {
-      std::stringstream ss;
-      ss << "fifo" << i;
-      fifo[i].~sc_fifo();
-      new(&fifo[i]) sc_core::sc_fifo<int>(ss.str().c_str(), _Depth);
-    }
+    fifo = new sc_core::sc_fifo_out<int>[_Output];
   }
 
   /// Use this function to set the coordinates of the router.
@@ -81,16 +60,8 @@ protected:
   /// Read a packet from the link.
   void read_packet(int iport);
 
-  /// Transmit a packet to the output.
-  void write_packet(int iport);
-
   /// Location of the router.
   int _x, _y;
-
-  /// Size of the FIFOs.
-  unsigned _fifo_depth;
-
-  std::unique_ptr<abstract_routing_policy> _policy;
 
 private:
 
