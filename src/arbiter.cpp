@@ -171,7 +171,7 @@ void arbiter::process()
     }
 
     packet pack= f[choice].read();
-    out[pack.address].write(pack);
+    out.write(pack);
 
     update(choice);
 }

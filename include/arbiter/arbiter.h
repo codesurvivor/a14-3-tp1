@@ -12,9 +12,9 @@ enum arbiterMode {RAND, LRU, FIFO, FIXED, ROUNDROBIN};
 SC_MODULE(arbiter)
 {
     sc_core::sc_fifo_in<packet> f[NB_FIFO];
-    sc_core::sc_in<bool> clk;
+    sc_core::sc_in<bool> clock;
     sc_core::sc_in<int> arbType;
-    sc_core::sc_out<packet> out[NB_FIFO];
+    sc_core::sc_out<packet> out;
 
     // For Rand Mode
     int lfsr;
@@ -90,7 +90,7 @@ SC_MODULE(arbiter)
         initRoundRobin();
 
         SC_METHOD(process);
-        sensitive << clk.pos();
+        sensitive << clock.pos();
 
         SC_METHOD(pushedInFifo0);
         sensitive << f[0].data_written_event();

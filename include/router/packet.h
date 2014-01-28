@@ -11,13 +11,23 @@
  */
 struct packet
 {
-  uint8_t address;
-  int data;
+    uint8_t address;
+    int data;
 
-  explicit packet(uint8_t add = 0, int data = 0)
-    : address(add)
-    , data(data)
-  {}
+    explicit packet(uint8_t add = 0, int data = 0)
+        : address(add)
+        , data(data)
+    {}
+
+    bool operator==(const packet& p)
+    {
+        if(p.address == address && p.data == data)
+        {
+            return true;
+        }
+
+        return false;
+    }
 
 }; // struct packet
 
@@ -27,18 +37,18 @@ namespace sc_core
 {
 
 
-inline void sc_trace(sc_trace_file* file, ::packet const& pack, std::string const& name)
+inline void sc_trace(sc_trace_file* file, ::packet const& pack, std::string& name)
 {
-  {
-    std::ostringstream ss;
-    ss << name << ".address";
-    sc_trace(file, pack.address, ss.str(), 8);
-  }
-  {
-    std::ostringstream ss;
-    ss << name << ".data";
-    sc_trace(file, pack.data, ss.str(), 32);
-  }
+    {
+        std::ostringstream ss;
+        ss << name << ".address";
+        sc_trace(file, pack.address, ss.str(), 8);
+    }
+    {
+        std::ostringstream ss;
+        ss << name << ".data";
+        sc_trace(file, pack.data, ss.str(), 32);
+    }
 }
 
 }
