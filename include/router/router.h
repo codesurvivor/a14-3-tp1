@@ -39,17 +39,21 @@ public:
     , _y(-1)
     , _router_input_ports(input)
     , _router_output_ports(output)
-
+    , activated_in(new sc_core::sc_in<bool>[input])
+    , data_in(new sc_core::sc_in<int>[input])
+    , address_in(new sc_core::sc_in<uint8_t>[input])
+    , fifo(new sc_core::sc_fifo_out<packet>[output])
   {
     SC_METHOD(main);
-
     sensitive << clock.pos();
+  }
 
-    activated_in = new sc_core::sc_in<bool>   [input];
-    data_in      = new sc_core::sc_in<int>    [input];
-    address_in   = new sc_core::sc_in<uint8_t>[input];
-
-    fifo = new sc_core::sc_fifo_out<packet>[output];
+  ~router(void)
+  {
+    delete[] activated_in;
+    delete[] data_in;
+    delete[] address_in;
+    delete[] fifo;
   }
 
   /// Use this function to set the coordinates of the router.

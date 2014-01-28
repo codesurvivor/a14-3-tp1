@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <sstream>
+#include <memory>
 
 
 #include <router/packet.h>
@@ -37,20 +38,21 @@ int sc_main(int argc, char** argv)
   // Declare clock.
   sc_core::sc_clock clock;
 
-  stream_generator* tg1 = new stream_generator("stream_generator");
+  auto tg1 = std::make_shared<stream_generator>("stream_generator");
   {
     tg1->set_address_range(0, OUTPUT_NB);
     tg1->set_period(10);
+    tg1->set_offset(0);
     tg1->clock(clock);
   }
 
-  burst_generator* tg2 = new burst_generator("burst_generator");
+  auto tg2 = std::make_shared<burst_generator>("burst_generator");
   {
     tg2->set_address_range(0, OUTPUT_NB);
     tg2->set_burst(100, 2, 10);
+    tg2->set_offset(0);
     tg2->clock(clock);
   }
-
 
   sc_core::sc_signal<bool> stream_activated, burst_activated;
   {
@@ -70,7 +72,7 @@ int sc_main(int argc, char** argv)
     tg2->address(burst_addr);
   }
 
-  router * routr1 = new router("router1", INPUT_NB, OUTPUT_NB);
+  auto routr1 = std::make_shared<router>("router1", INPUT_NB, OUTPUT_NB);
   routr1->set_xy(1,0);
   sc_core::sc_fifo<packet> fifos1[OUTPUT_NB];
   fifo_spy spy1("spy1");
@@ -93,7 +95,7 @@ int sc_main(int argc, char** argv)
   }
 
 
-  router * routr2 = new router("router2", INPUT_NB, OUTPUT_NB);
+  auto routr2 = std::make_shared<router>("router2", INPUT_NB, OUTPUT_NB);
   routr2->set_xy(1,1);
   sc_core::sc_fifo<packet> fifos2[OUTPUT_NB];
   fifo_spy spy2("spy2");
