@@ -7,11 +7,13 @@
 #include <router/packet.h>
 #include <traffic/traffic_generator.h>
 
+#define OUTPUT_NB 8
+#define INPUT_NB 4
 
 SC_MODULE(fifo_spy)
 {
-  sc_core::sc_fifo_in<packet> fifo[4];
-  sc_core::sc_out<packet> out[4];
+  sc_core::sc_fifo_in<packet> fifo[OUTPUT_NB];
+  sc_core::sc_out<packet> out[OUTPUT_NB];
   sc_core::sc_in<bool> clock;
 
   SC_CTOR(fifo_spy)
@@ -22,7 +24,7 @@ SC_MODULE(fifo_spy)
 
   void spy(void)
   {
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < OUTPUT_NB; ++i)
     {
       if (fifo[i].num_available() > 0)
         out[i].write(fifo[i].read());
@@ -37,14 +39,14 @@ int sc_main(int argc, char** argv)
 
   stream_generator* tg1 = new stream_generator("stream_generator");
   {
-    tg1->set_address_range(0, 4);
+    tg1->set_address_range(0, OUTPUT_NB);
     tg1->set_period(10);
     tg1->clock(clock);
   }
 
   burst_generator* tg2 = new burst_generator("burst_generator");
   {
-    tg2->set_address_range(0, 4);
+    tg2->set_address_range(0, OUTPUT_NB);
     tg2->set_burst(100, 2, 10);
     tg2->clock(clock);
   }
@@ -68,19 +70,21 @@ int sc_main(int argc, char** argv)
     tg2->address(burst_addr);
   }
 
-  router * routr1 = new router("router1", 4, 1);
-  sc_core::sc_fifo<packet> fifos1[4];
+  router * routr1 = new router("router1", INPUT_NB, OUTPUT_NB);
+  routr1->set_xy(1,0);
+  sc_core::sc_fifo<packet> fifos1[OUTPUT_NB];
   fifo_spy spy1("spy1");
   {
+    routr1->clock(clock);
     spy1.clock(clock);
-    for (int i = 0; i < 4; ++i)
+
+    for (int i = 0; i < OUTPUT_NB; ++i)
     {
       routr1->fifo[i](fifos1[i]);
       spy1.fifo[i](fifos1[i]);
     }
 
-    routr1->clock(clock);
-    for(int i=0;i<4;i++)
+    for(int i = 0; i < INPUT_NB; i++)
     {
       routr1->activated_in[i](stream_activated);
       routr1->address_in[i](stream_addr);
@@ -89,25 +93,38 @@ int sc_main(int argc, char** argv)
   }
 
 
-  router * routr2 = new router("router2", 4, 1);
-  sc_core::sc_fifo<packet> fifos2[4];
+  router * routr2 = new router("router2", INPUT_NB, OUTPUT_NB);
+  routr2->set_xy(1,1);
+  sc_core::sc_fifo<packet> fifos2[OUTPUT_NB];
   fifo_spy spy2("spy2");
   {
+    routr2->clock(clock);
     spy2.clock(clock);
-    for (int i = 0; i < 4; ++i)
+
+    for (int i = 0; i < OUTPUT_NB; ++i)
     {
       routr2->fifo[i](fifos2[i]);
       spy2.fifo[i](fifos2[i]);
     }
 
-    routr2->clock(clock);
-    for(int i = 0; i < 4; ++i)
+    for(int i = 0; i < INPUT_NB; ++i)
     {
       routr2->activated_in[i](burst_activated);
       routr2->address_in[i](burst_addr);
       routr2->data_in[i](burst_data);
     }
   }
+
+  sc_core::sc_signal<packet> spy1_out[OUTPUT_NB];
+  sc_core::sc_signal<packet> spy2_out[OUTPUT_NB];
+  {
+    for (int i = 0; i < OUTPUT_NB; ++i)
+    {
+      spy1.out[i](spy1_out[i]);
+      spy2.out[i](spy2_out[i]);
+    }
+  }
+
 
   sc_core::vcd_trace_file* const file =
       (sc_core::vcd_trace_file*) sc_core::sc_create_vcd_trace_file("output");
@@ -120,18 +137,18 @@ int sc_main(int argc, char** argv)
   sc_core::sc_trace(file, tg2->address  , "burst_address");
   sc_core::sc_trace(file, tg2->data     , "burst_data"   );
 
-  for (int i = 0; i < 4; ++i)
+  for (int i = 0; i < OUTPUT_NB; ++i)
   {
     std::ostringstream ss;
     ss << "fifo1." << i;
-    sc_core::sc_trace(file, spy1.out[i], ss.str());
+    sc_core::sc_trace(file, spy1_out[i], ss.str());
   }
 
-  for (int i = 0; i < 4; ++i)
+  for (int i = 0; i < OUTPUT_NB; ++i)
   {
     std::ostringstream ss;
     ss << "fifo2." << i;
-    sc_core::sc_trace(file, spy2.out[i], ss.str());
+    sc_core::sc_trace(file, spy2_out[i], ss.str());
   }
 
   sc_core::sc_start(1000, sc_core::SC_NS);

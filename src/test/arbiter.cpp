@@ -26,7 +26,7 @@ SC_MODULE(packet_wrapper)
 
 int sc_main(int argc, char *argv[])
 {
-    c_core::vcd_trace_file* const file =
+    sc_core::vcd_trace_file* const file =
             (sc_core::vcd_trace_file*) sc_core::sc_create_vcd_trace_file("output");
 
     sc_core::sc_clock clock;
