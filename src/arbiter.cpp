@@ -202,6 +202,8 @@ arbiter::arbiter(
   , _fifo_depth(fifo_depth)
   , _id(0)
 {
+  _lru_index = new char[_nb_fifo];
+
   init_lru();
   init_fifo();
   init_round_robin();
@@ -234,6 +236,7 @@ arbiter::~arbiter()
 {
   delete[] f;
   delete[] _pushs_in_fifos;
+  delete[] _lru_index;
 }
 
 

@@ -49,7 +49,7 @@ int sc_main(int argc, char *argv[])
   ab->out(out);
   ab->choice_out(choice);
 
-  arbType.write(noc::arbiter_mode::FIXED);
+  arbType.write(noc::arbiter_mode::FIFO);
 
   std::shared_ptr<noc::stream_generator> tg[4];
   std::shared_ptr<packet_wrapper> pw[4];

@@ -55,7 +55,7 @@ private:
   int _lfsr;
 
   // For LRU Mode
-  char _lru_index[4];
+  char* _lru_index;
 
   // For FIFO Mode
   char* _pushs_in_fifos;
