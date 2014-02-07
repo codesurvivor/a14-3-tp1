@@ -20,7 +20,10 @@ SC_MODULE(packet_wrapper)
     while(true)
     {
       wait();
-      packs.write(noc::packet(addr.read(), data.read()));
+      noc::packet myPacket(addr.read(), data.read());
+
+      if (packs.num_free() > 0)
+        packs.write(myPacket);
     }
   }
 
@@ -49,7 +52,7 @@ int sc_main(int argc, char *argv[])
   ab->out(out);
   ab->choice_out(choice);
 
-  arbType.write(noc::arbiter_mode::FIFO);
+  arbType.write(noc::arbiter_mode::FIXED);
 
   std::shared_ptr<noc::stream_generator> tg[4];
   std::shared_ptr<packet_wrapper> pw[4];

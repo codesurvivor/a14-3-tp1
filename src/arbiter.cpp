@@ -162,8 +162,10 @@ void arbiter::process(void)
     //std::cout << "Arbitering type: " << type << std::endl;
     //std::cout << "|\n--> Current choice: " << unsigned(choice) << "\n\n";
 
-    packet pack= f[choice].read();
-    out.write(pack);
+
+    //TODO: understand why commenting this lines leads to a seg.fault
+    //packet pack= f[choice].read();
+    out.write(packet());//pack);
 
     update(choice);
   }
