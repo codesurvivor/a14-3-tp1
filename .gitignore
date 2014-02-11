@@ -3,3 +3,4 @@ build
 bin
 lib
 .*.swp
+*.vcd

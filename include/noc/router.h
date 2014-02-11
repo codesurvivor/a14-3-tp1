@@ -1,6 +1,8 @@
 #ifndef _ROUTER_ROUTER_H_
 #define _ROUTER_ROUTER_H_
 
+#include <noc/router.h>
+
 #include <list>
 #include <sstream>
 #include <memory>
@@ -24,57 +26,42 @@ public:
   sc_core::sc_in<bool> clock;
 
   /// Input activation port.
-  sc_core::sc_in<bool>* activated_in;
+  sc_core::sc_in<bool> activated_in;
 
   /// Address input.
-  sc_core::sc_in<uint8_t>* address_in;
-
-  /// Data input.
-  sc_core::sc_in<int>* data_in;
+  sc_core::sc_in<packet> input;
 
   /// Internal FIFO.
   sc_core::sc_fifo_out<packet>* fifo;
 
+  /// Acknoledgment.
+  sc_core::sc_out<bool> acknoledge;
+
   /// Specify the functionality of router per clock cycle.
   void main(void);
 
-  router(::sc_core::sc_module_name name, unsigned input, unsigned output)
-    : _x(-1)
-    , _y(-1)
-    , _router_input_ports(input)
+  router(::sc_core::sc_module_name name, unsigned output)
+    : ::sc_core::sc_module(name)
+    , clock("clock")
+    , activated_in("input_activated")
+    , input("input")
+    , acknoledge("acknoledge")
     , _router_output_ports(output)
-    , activated_in(new sc_core::sc_in<bool>[input])
-    , data_in(new sc_core::sc_in<int>[input])
-    , address_in(new sc_core::sc_in<uint8_t>[input])
     , fifo(new sc_core::sc_fifo_out<packet>[output])
   {
-    SC_METHOD(main);
+    SC_THREAD(main);
     sensitive << clock.pos();
   }
 
   ~router(void)
-  {
-    delete[] activated_in;
-    delete[] data_in;
-    delete[] address_in;
-    delete[] fifo;
-  }
-
-  /// Use this function to set the coordinates of the router.
-  void set_xy(int x, int y);
+  { delete[] fifo; }
 
 protected:
 
   /// Read a packet from the link.
-  void read_packet(int iport);
-
-  /// Location of the router.
-  int _x, _y;
+  void read_packet(void);
 
 private:
-
-  /// Number of input ports.
-  const unsigned _router_input_ports;
 
   /// Number of ouput ports.
   const unsigned _router_output_ports;

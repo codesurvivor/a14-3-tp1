@@ -1,6 +1,8 @@
 #ifndef _ROUTER_PACKET_H_
 #define _ROUTER_PACKET_H_
 
+#include <noc/forward.h>
+
 #include <systemc>
 #include <sstream>
 

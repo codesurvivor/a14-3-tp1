@@ -25,8 +25,8 @@ uint8_t arbiter::choose_rand(void)
     }
 
     int availableFifos = 0;
-    for (int i = 0; i < _nb_fifo; i++)
-        if (f[i].num_available() > 0 )
+    for (int i = 0; i < _nb_fifos; i++)
+        if (fifos[i].num_available() > 0 )
             ++availableFifos;
 
     if (availableFifos == 0)
@@ -35,9 +35,9 @@ uint8_t arbiter::choose_rand(void)
     const int chosen = randomNumber % availableFifos;
     int counter = 0;
 
-    for (int i = 0; i < _nb_fifo; i++)
+    for (int i = 0; i < _nb_fifos; i++)
     {
-        if (f[i].num_available() > 0)
+        if (fifos[i].num_available() > 0)
         {
             if (counter++ == chosen)
                 return i;
@@ -59,13 +59,13 @@ void arbiter::update_rand(char numFifo)
 // LRU Mode
 
 void arbiter::init_lru(void)
-{ for(int i = 0; i < _nb_fifo; ++i) _lru_index[i] = i;}
+{ for(int i = 0; i < _nb_fifos; ++i) _lru_index[i] = i;}
 
 
 uint8_t arbiter::choose_lru(void)
 {
-    for(int i = 0; i < _nb_fifo; i++)
-        if(f[_lru_index[i]].num_available() > 0 )
+    for(int i = 0; i < _nb_fifos; i++)
+        if(fifos[_lru_index[i]].num_available() > 0 )
             return _lru_index[i];
 
     return std::numeric_limits<uint8_t>::max();
@@ -76,7 +76,7 @@ void arbiter::update_lru(char numFifo)
 {
     bool found = false;
 
-    for(int i = 0; i < _nb_fifo; i++)
+    for(int i = 0; i < _nb_fifos; i++)
     {
         if (found)
         {
@@ -88,7 +88,7 @@ void arbiter::update_lru(char numFifo)
         }
     }
 
-    _lru_index[_nb_fifo-1] = numFifo;
+    _lru_index[_nb_fifos-1] = numFifo;
 }
 
 
@@ -132,8 +132,8 @@ void arbiter::pushed_in_fifo(char idFifo)
 
 uint8_t arbiter::choose_fixed(void)
 {
-    for (int i = 0; i < _nb_fifo; i++)
-        if (f[i].num_available() > 0 )
+    for (int i = 0; i < _nb_fifos; i++)
+        if (fifos[i].num_available() > 0 )
             return i;
 
     return std::numeric_limits<uint8_t>::max();
@@ -143,14 +143,14 @@ uint8_t arbiter::choose_fixed(void)
 // Round Robin Mode
 
 void arbiter::init_round_robin(void)
-{ _last_used = _nb_fifo - 1; }
+{ _last_used = _nb_fifos - 1; }
 
 
 uint8_t arbiter::choose_round_robin(void)
 {
-    for(int i = 0; i < _nb_fifo; i++)
-        if(f[(_last_used + 1 + i)%_nb_fifo].num_available() > 0 )
-            return (_last_used + 1 + i)%_nb_fifo;
+    for(int i = 0; i < _nb_fifos; i++)
+        if(fifos[(_last_used + 1 + i)%_nb_fifos].num_available() > 0 )
+            return (_last_used + 1 + i)%_nb_fifos;
 
     return std::numeric_limits<uint8_t>::max();
 }
@@ -170,7 +170,7 @@ void arbiter::process(void)
         wait();
 
         uint8_t choice = std::numeric_limits<uint8_t>::max();
-        const int type = arbType.read();
+        const int type = arb_type.read();
         switch(type)
         {
         case RAND :
@@ -200,8 +200,8 @@ void arbiter::process(void)
         //std::cout << "Arbitering type: " << type << std::endl;
         //std::cout << "|\n--> Current choice: " << unsigned(choice) << "\n\n";
 
-        packet pack= f[choice].read();
-        out.write(pack);
+        packet pack= fifos[choice].read();
+        output.write(pack);
 
         update(choice);
     }
@@ -224,7 +224,7 @@ void arbiter::pushed_in_fifo(void)
 
     while(true)
     {
-        wait(f[id].data_written_event());
+        wait(fifos[id].data_written_event());
         //std::cout << "fifo[" << id << "] has been written." << std::endl;
         pushed_in_fifo(id);
     }
@@ -236,9 +236,14 @@ arbiter::arbiter(
         unsigned nb_fifo,
         unsigned fifo_depth)
     : ::sc_core::sc_module(name)
-    , _nb_fifo(nb_fifo)
-    , _pushs_in_fifos(_nb_fifo*_fifo_depth, 0)
-    , _lru_index(_nb_fifo, 0)
+    , fifos(nullptr)
+    , clock("clock")
+    , arb_type("arbitration_type")
+    , output("output")
+    , choice_out("fifo_choosen_index")
+    , _nb_fifos(nb_fifo)
+    , _pushs_in_fifos(_nb_fifos*_fifo_depth, 0)
+    , _lru_index(_nb_fifos, 0)
     , _fifo_depth(fifo_depth)
     , _id(0)
 {
@@ -247,13 +252,13 @@ arbiter::arbiter(
     init_fifo();
     init_round_robin();
 
-    f = new ::sc_core::sc_fifo_in<packet>[_nb_fifo];
+    fifos = new ::sc_core::sc_fifo_in<packet>[_nb_fifos];
 
     SC_THREAD(process);
     sensitive << clock.pos();
 
     // Declare the NB_FIFO threads: 1 by FIFO.
-    for (unsigned i = 0; i < _nb_fifo; ++i)
+    for (unsigned i = 0; i < _nb_fifos; ++i)
     {
         std::stringstream ss;
         ss << "pushedInFifo" << i;
@@ -271,7 +276,7 @@ arbiter::arbiter(
 
 
 arbiter::~arbiter(void)
-{ delete[] f; }
+{ delete[] fifos; }
 
 
 unsigned arbiter::get_id(void)

@@ -8,25 +8,52 @@ namespace noc
 abstract_traffic_generator::abstract_traffic_generator(
     sc_core::sc_module_name name)
   : ::sc_core::sc_module(name)
+  , clock("clock")
+  , acknoledge("acknoledge")
+  , activated("activated")
+  , output("output")
   , _address_min(0)
   , _address_max(1) {}
 
 
 void abstract_traffic_generator::emit_random_package(void)
 {
-  uint8_t add =
-      (rand() % (_address_max - _address_min)) + _address_min;
-  int dat = rand();
+  packet p;
+  p.address = get_address();
+  p.data = rand();
+
+  /* ^  _____
+   * |_|     |___continue
+   * ---------------------> traffic_generator.activated
+   * ^      ___
+   * |_____|   |_
+   * ---------------------> traffic_generator.acknoledge
+   */
 
   increase_time();
-  address.write(add);
-  data.write(dat);
+  output.write(p);
   wait(clock.negedge_event());
   activated.write(true);
-  wait(clock.posedge_event());
-  //increase_time();
-  wait(clock.negedge_event());
+  wait(acknoledge.posedge_event());
   activated.write(false);
+  wait(acknoledge.negedge_event());
+}
+
+
+uint8_t abstract_traffic_generator::get_address(void)
+{
+  --_current_address_life_time;
+  uint8_t res = _current_address;
+  if (!_current_address_life_time) choose_new_random_address();
+  return res;
+}
+
+
+void abstract_traffic_generator::choose_new_random_address(void)
+{
+  _current_address =
+      (rand() % (_address_max - _address_min)) + _address_min;
+  _current_address_life_time = (rand() % _address_max_life_time);
 }
 
 
@@ -42,7 +69,7 @@ stream_generator::stream_generator(sc_core::sc_module_name name)
 }
 
 
-void stream_generator::generate()
+void stream_generator::generate(void)
 {
   while(true)
   {

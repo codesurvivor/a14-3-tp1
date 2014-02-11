@@ -11,40 +11,34 @@ namespace noc
 
 void router::main(void)
 {
-  // To identify PE.
-  assert(_x != -1);
-  assert(_y != -1);
-
-  for (int iport = 0; iport < _router_input_ports; ++iport)
-    if (activated_in[iport].read())
-      read_packet(iport);
+  acknoledge.write(false);
+  while (true)
+  {
+    wait(activated_in.posedge_event());
+    read_packet();
+  }
 }
 
 
-void router::set_xy(int x, int y)
+void router::read_packet(void)
 {
-  // Set once only.
-  assert(_x == -1);
-  assert(_y == -1);
+  packet p = input.read();
+  if (fifo->num_free() > 0)
+  {
 
-  // Must use a legal location.
-  assert(x != -1);
-  assert(y != -1);
+    /* ^  _____
+     * |_|     |__
+     * ---------------------> router.activated_in
+     * ^   _____
+     * |__|     |_continue
+     * ---------------------> router.acknoledge
+     */
 
-  _x = x;
-  _y = y;
-}
-
-
-void router::read_packet(int iport)
-{
-  assert(iport < _router_input_ports);
-
-  packet p;
-  p.data      = data_in[iport].read();
-  p.address   = address_in[iport].read();
-
-  fifo[p.address].write(p);
+    fifo[p.address].write(p);
+    acknoledge.write(true);
+    wait(activated_in.negedge_event());
+    acknoledge.write(false);
+  }
 }
 
 

@@ -1,6 +1,8 @@
 #ifndef _ARBITER_ARBITER_H_
 #define _ARBITER_ARBITER_H_
 
+#include <noc/forward.h>
+
 #include <thread>
 #include <mutex>
 
@@ -12,25 +14,16 @@
 namespace noc
 {
 
-enum arbiter_mode
-{
-  RAND       = 0,
-  LRU        = 1,
-  FIFO       = 2,
-  FIXED      = 3,
-  ROUNDROBIN = 4
-};
-
 class arbiter : public ::sc_core::sc_module
 {
 public:
 
   typedef arbiter SC_CURRENT_USER_MODULE;
 
-  sc_core::sc_fifo_in<packet>* f;
+  sc_core::sc_fifo_in<packet>* fifos;
   sc_core::sc_in<bool> clock;
-  sc_core::sc_in<int> arbType;
-  sc_core::sc_out<packet> out;
+  sc_core::sc_in<arbiter_mode> arb_type;
+  sc_core::sc_out<packet> output;
   sc_core::sc_out<uint8_t> choice_out;
 
   arbiter(::sc_core::sc_module_name name,
@@ -40,11 +33,11 @@ public:
   virtual ~arbiter(void);
 
   inline unsigned num_of_fifos(void) const
-  { return _nb_fifo; }
+  { return _nb_fifos; }
 
 private:
 
-  unsigned _nb_fifo;
+  unsigned _nb_fifos;
   unsigned _fifo_depth;
 
   // Id assignement.

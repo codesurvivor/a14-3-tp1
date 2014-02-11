@@ -7,25 +7,23 @@
 #include <noc/traffic_generator.h>
 
 
-SC_MODULE(packet_wrapper)
+class packet_wrapper
+    : public ::sc_core::sc_module
 {
   public:
   ::sc_core::sc_in<bool> clock;
-  ::sc_core::sc_in<uint8_t> addr;
-  ::sc_core::sc_in<int> data;
+  ::sc_core::sc_in<noc::packet> packet;
   ::sc_core::sc_fifo_out<noc::packet> packs;
 
-  void process()
+  void process(void)
   {
     while(true)
     {
       wait();
-      noc::packet myPacket(addr.read(), data.read());
+      noc::packet myPacket(packet.read());
 
       if (packs.num_free() > 0)
-      {
-          packs.write(myPacket);
-      }
+        packs.write(myPacket);
     }
   }
 
@@ -36,32 +34,32 @@ SC_MODULE(packet_wrapper)
   }
 };
 
-int sc_main(int argc, char *argv[])
+
+int sc_main(int argc, char **argv)
 {
   sc_core::sc_clock clock;
-  sc_core::sc_signal<int> arbType;
+  sc_core::sc_signal<noc::arbiter_mode> arb_type;
   sc_core::sc_signal<uint8_t> choice;
-  sc_core::sc_signal<noc::packet> out;
+  sc_core::sc_signal<noc::packet> output;
   sc_core::sc_fifo<noc::packet> fifos[4];
 
   sc_core::sc_signal<bool> stream_activated[4];
-  sc_core::sc_signal<uint8_t> stream_addr[4];
-  sc_core::sc_signal<int> stream_data[4];
+  sc_core::sc_signal<noc::packet> stream_packet[4];
 
-  auto ab = std::make_shared<noc::arbiter>("arbiter", 4, 16);
-  ab->clock(clock);
-  ab->arbType(arbType);
-  ab->out(out);
-  ab->choice_out(choice);
+  noc::arbiter ab("arbiter", 4, 16);
+  ab.clock(clock);
+  ab.arb_type(arb_type);
+  ab.output(output);
+  ab.choice_out(choice);
 
-  arbType.write(noc::arbiter_mode::RAND);
+  arb_type.write(noc::arbiter_mode::RAND);
 
   std::shared_ptr<noc::stream_generator> tg[4];
   std::shared_ptr<packet_wrapper> pw[4];
 
   for (unsigned i = 0; i < 4; ++i)
   {
-    ab->f[i].bind(fifos[i]);
+    ab.fifos[i].bind(fifos[i]);
 
     // Set stream_generator array.
     {
@@ -69,13 +67,13 @@ int sc_main(int argc, char *argv[])
       ss << "stream_generator" << i;
 
       tg[i] = std::make_shared<noc::stream_generator>(ss.str().c_str());
-      tg[i]->set_address_range(0, 4);
+      tg[i]->set_address_properties(0, 4);
       tg[i]->set_period(3*(i+1));
 
-      tg[i]->clock(clock);
-      tg[i]->activated(stream_activated[i]);
-      tg[i]->address(stream_addr[i]);
-      tg[i]->data(stream_data[i]);
+      tg[i]->clock.bind(clock);
+      tg[i]->activated.bind(stream_activated[i]);
+      tg[i]->acknoledge.bind(clock);
+      tg[i]->output.bind(stream_packet[i]);
     }
 
     // Set packet_wrapper array.
@@ -87,14 +85,13 @@ int sc_main(int argc, char *argv[])
 
       // Activate packet wrapper only when a packet is emitted!
       pw[i]->clock(tg[i]->activated);
-      pw[i]->addr(stream_addr[i]);
-      pw[i]->data(stream_data[i]);
+      pw[i]->packet(stream_packet[i]);
       pw[i]->packs(fifos[i]);
     }
   }
 
   sc_core::vcd_trace_file* const file =
-      (sc_core::vcd_trace_file*) sc_core::sc_create_vcd_trace_file("output");
+      (sc_core::vcd_trace_file*) sc_core::sc_create_vcd_trace_file("arbiter");
 
   sc_core::sc_trace(file, choice, "arbiter_choice");
   sc_core::sc_trace(file, clock , "clock"         );

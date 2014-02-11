@@ -4,15 +4,18 @@
 #include <sstream>
 #include <memory>
 
-
 #include <noc/packet.h>
 #include <noc/traffic_generator.h>
+
 
 #define OUTPUT_NB 8
 #define INPUT_NB 4
 
-SC_MODULE(fifo_spy)
+class fifo_spy
+    : public ::sc_core::sc_module
 {
+public:
+
   sc_core::sc_fifo_in<noc::packet> fifo[OUTPUT_NB];
   sc_core::sc_out<noc::packet> out[OUTPUT_NB];
   sc_core::sc_in<bool> clock;
@@ -45,89 +48,76 @@ int sc_main(int argc, char** argv)
   // Declare clock.
   sc_core::sc_clock clock;
 
-  auto tg1 = std::make_shared<noc::stream_generator>
-      ("stream_generator");
+  noc::stream_generator tg1("stream_generator");
   {
-    tg1->set_address_range(0, OUTPUT_NB);
-    tg1->set_period(10);
-    tg1->set_offset(0);
-    tg1->clock(clock);
+    tg1.set_address_properties(0, OUTPUT_NB);
+    tg1.set_period(10);
+    tg1.set_offset(0);
+    tg1.clock(clock);
   }
 
-  auto tg2 = std::make_shared<noc::burst_generator>
-      ("burst_generator");
+  noc::burst_generator tg2("burst_generator");
   {
-    tg2->set_address_range(0, OUTPUT_NB);
-    tg2->set_burst(100, 2, 10);
-    tg2->set_offset(0);
-    tg2->clock(clock);
+    tg2.set_address_properties(0, OUTPUT_NB);
+    tg2.set_burst(100, 2, 10);
+    tg2.set_offset(0);
+    tg2.clock(clock);
   }
 
-  sc_core::sc_signal<bool> stream_activated, burst_activated;
+  sc_core::sc_signal<bool>
+      stream_activated, burst_activated,
+      stream_ack, burst_ack;
   {
-    tg1->activated(stream_activated);
-    tg2->activated(burst_activated);
+    tg1.activated(stream_activated);
+    tg2.activated(burst_activated);
+
+    tg1.acknoledge(stream_ack);
+    tg2.acknoledge(burst_ack);
   }
 
-  sc_core::sc_signal<int> stream_data, burst_data;
+  sc_core::sc_signal<noc::packet> stream_packet, burst_packet;
   {
-    tg1->data(stream_data);
-    tg2->data(burst_data);
+    tg1.output(stream_packet);
+    tg2.output(burst_packet);
   }
 
-  sc_core::sc_signal<uint8_t> stream_addr, burst_addr;
-  {
-    tg1->address(stream_addr);
-    tg2->address(burst_addr);
-  }
-
-  auto routr1 = std::make_shared<noc::router>
-      ("router1", INPUT_NB, OUTPUT_NB);
-  routr1->set_xy(1,0);
+  noc::router router1("router1", OUTPUT_NB);
 
   sc_core::sc_fifo<noc::packet> fifos1[OUTPUT_NB];
   fifo_spy spy1("spy1");
   {
-    routr1->clock(clock);
+    router1.clock(clock);
     spy1.clock(clock);
 
     for (int i = 0; i < OUTPUT_NB; ++i)
     {
-      routr1->fifo[i](fifos1[i]);
+      router1.fifo[i](fifos1[i]);
       spy1.fifo[i](fifos1[i]);
     }
 
-    for(int i = 0; i < INPUT_NB; i++)
-    {
-      routr1->activated_in[i](stream_activated);
-      routr1->address_in[i](stream_addr);
-      routr1->data_in[i](stream_data);
-    }
+    router1.activated_in(stream_activated);
+    router1.acknoledge(stream_ack);
+    router1.input(stream_packet);
   }
 
 
-  auto routr2 = std::make_shared<noc::router>
-      ("router2", INPUT_NB, OUTPUT_NB);
-  routr2->set_xy(1,1);
+  noc::router router2("router2", OUTPUT_NB);
 
   sc_core::sc_fifo<noc::packet> fifos2[OUTPUT_NB];
   fifo_spy spy2("spy2");
   {
-    routr2->clock(clock);
+    router2.clock(clock);
     spy2.clock(clock);
 
     for (int i = 0; i < OUTPUT_NB; ++i)
     {
-      routr2->fifo[i](fifos2[i]);
+      router2.fifo[i](fifos2[i]);
       spy2.fifo[i](fifos2[i]);
     }
 
-    for(int i = 0; i < INPUT_NB; ++i)
-    {
-      routr2->activated_in[i](burst_activated);
-      routr2->address_in[i](burst_addr);
-      routr2->data_in[i](burst_data);
-    }
+    router2.activated_in(burst_activated);
+    router2.acknoledge(burst_ack);
+    router2.input(burst_packet);
   }
 
   sc_core::sc_signal<noc::packet> spy1_out[OUTPUT_NB];
@@ -141,17 +131,15 @@ int sc_main(int argc, char** argv)
   }
 
   sc_core::vcd_trace_file* const file =
-      (sc_core::vcd_trace_file*) sc_core::sc_create_vcd_trace_file("output");
+      (sc_core::vcd_trace_file*) sc_core::sc_create_vcd_trace_file("router");
 
-  sc_core::sc_trace(file, clock         , "clock"         );
+  sc_core::sc_trace(file, clock        , "clock"        );
 
-  sc_core::sc_trace(file, tg1->activated, "stream_active" );
-  sc_core::sc_trace(file, tg1->address  , "stream_address");
-  sc_core::sc_trace(file, tg1->data     , "stream_data"   );
+  sc_core::sc_trace(file, tg1.activated, "stream_active");
+  sc_core::sc_trace(file, tg1.output   , "stream_output");
 
-  sc_core::sc_trace(file, tg2->activated, "burst_active"  );
-  sc_core::sc_trace(file, tg2->address  , "burst_address" );
-  sc_core::sc_trace(file, tg2->data     , "burst_data"    );
+  sc_core::sc_trace(file, tg2.activated, "burst_active" );
+  sc_core::sc_trace(file, tg2.output   , "burst_output" );
 
   for (int i = 0; i < OUTPUT_NB; ++i)
   {
