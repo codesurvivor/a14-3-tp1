@@ -23,7 +23,9 @@ SC_MODULE(packet_wrapper)
       noc::packet myPacket(addr.read(), data.read());
 
       if (packs.num_free() > 0)
-        packs.write(myPacket);
+      {
+          packs.write(myPacket);
+      }
     }
   }
 
@@ -46,13 +48,13 @@ int sc_main(int argc, char *argv[])
   sc_core::sc_signal<uint8_t> stream_addr[4];
   sc_core::sc_signal<int> stream_data[4];
 
-  auto ab = std::make_shared<noc::arbiter>("arbiter", 4, 8);
+  auto ab = std::make_shared<noc::arbiter>("arbiter", 4, 16);
   ab->clock(clock);
   ab->arbType(arbType);
   ab->out(out);
   ab->choice_out(choice);
 
-  arbType.write(noc::arbiter_mode::FIXED);
+  arbType.write(noc::arbiter_mode::RAND);
 
   std::shared_ptr<noc::stream_generator> tg[4];
   std::shared_ptr<packet_wrapper> pw[4];

@@ -35,9 +35,9 @@ public:
 
   arbiter(::sc_core::sc_module_name name,
           unsigned nb_fifo,
-          unsigned fifo_depth = 8);
+          unsigned fifo_depth = 16);
 
-  ~arbiter(void);
+  virtual ~arbiter(void);
 
   inline unsigned num_of_fifos(void) const
   { return _nb_fifo; }
@@ -55,10 +55,10 @@ private:
   int _lfsr;
 
   // For LRU Mode
-  char* _lru_index;
+  std::vector<uint8_t> _lru_index;
 
   // For FIFO Mode
-  char* _pushs_in_fifos;
+  std::vector<uint8_t> _pushs_in_fifos;
   unsigned int _in_fifos;
 
   // For Round Robin Mode
@@ -67,6 +67,7 @@ private:
   unsigned get_id(void);
 
   // Rand Mode
+  void init_rand(void);
   uint8_t choose_rand(void);
   void update_rand(char numFifo);
 
