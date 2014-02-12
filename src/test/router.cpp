@@ -35,8 +35,14 @@ public:
       {
         if (fifo[i].num_available() > 0)
         {
-          std::cout << "available(" << i << "): " << fifo[i].num_available() << std::endl;
-          out[i].write(fifo[i].read());
+          noc::packet p = fifo[i].read();
+          out[i].write(p);
+
+          std::cout
+              << "available(" << i << "): "
+              << (fifo[i].num_available() + 1) << " -> "
+              << "@[" << std::hex << unsigned(p.address) << "] = "
+              << std::dec << p.data << std::endl;
         }
       }
     }
@@ -51,7 +57,7 @@ int sc_main(int argc, char** argv)
   noc::stream_generator tg1("stream_generator");
   {
     tg1.set_address_properties(0, OUTPUT_NB);
-    tg1.set_period(10);
+    tg1.set_period(5);
     tg1.set_offset(0);
     tg1.clock(clock);
   }
@@ -91,7 +97,7 @@ int sc_main(int argc, char** argv)
 
     for (int i = 0; i < OUTPUT_NB; ++i)
     {
-      router1.fifo[i](fifos1[i]);
+      router1.fifos[i](fifos1[i]);
       spy1.fifo[i](fifos1[i]);
     }
 
@@ -111,7 +117,7 @@ int sc_main(int argc, char** argv)
 
     for (int i = 0; i < OUTPUT_NB; ++i)
     {
-      router2.fifo[i](fifos2[i]);
+      router2.fifos[i](fifos2[i]);
       spy2.fifo[i](fifos2[i]);
     }
 

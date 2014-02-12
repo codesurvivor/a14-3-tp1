@@ -82,7 +82,7 @@ noc::noc(sc_core::sc_module_name name, unsigned nb_input,
       for (unsigned i = 0; i < _nb_input; ++i)
         for (unsigned j = 0; j < _nb_output; ++j)
         {
-          _routers[i].fifo[j].bind(get_fifo(i,j));
+          _routers[i].fifos[j].bind(get_fifo(i,j));
           _arbiters[j].fifos[i].bind(get_fifo(i,j));
         }
     }

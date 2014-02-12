@@ -32,7 +32,7 @@ public:
   sc_core::sc_in<packet> input;
 
   /// Internal FIFO.
-  sc_core::sc_fifo_out<packet>* fifo;
+  sc_core::sc_fifo_out<packet>* fifos;
 
   /// Acknoledgment.
   sc_core::sc_out<bool> acknoledge;
@@ -40,21 +40,9 @@ public:
   /// Specify the functionality of router per clock cycle.
   void main(void);
 
-  router(::sc_core::sc_module_name name, unsigned output)
-    : ::sc_core::sc_module(name)
-    , clock("clock")
-    , activated_in("input_activated")
-    , input("input")
-    , acknoledge("acknoledge")
-    , _router_output_ports(output)
-    , fifo(new sc_core::sc_fifo_out<packet>[output])
-  {
-    SC_THREAD(main);
-    sensitive << clock.pos();
-  }
+  router(::sc_core::sc_module_name name, unsigned output);
 
-  ~router(void)
-  { delete[] fifo; }
+  ~router(void);
 
 protected:
 
@@ -65,7 +53,7 @@ private:
 
   /// Number of ouput ports.
   const unsigned _router_output_ports;
-}; // router
+};
 
 } // noc
 

@@ -13,6 +13,8 @@ class abstract_traffic_generator
 {
 public:
 
+  typedef abstract_traffic_generator SC_CURRENT_USER_MODULE;
+
   sc_core::sc_in<bool> clock;
   sc_core::sc_in<bool> acknoledge;
   sc_core::sc_out<bool> activated;
@@ -30,13 +32,22 @@ public:
 
   abstract_traffic_generator(::sc_core::sc_module_name name);
 
-  virtual void increase_time(void) = 0;
-
 protected:
 
   void emit_random_package(void);
 
+  unsigned get_clock_count(void) const
+  { return _clock_count; }
+
+  void set_clock_counter(unsigned val)
+  { _clock_count = val; }
+
+  void reset_clock_count(void)
+  { set_clock_counter(0); }
+
 private:
+
+  void clock_counter(void);
 
   inline uint8_t get_address(void);
   void choose_new_random_address(void);
@@ -46,12 +57,13 @@ private:
 
   uint8_t _current_address;
   uint8_t _current_address_life_time;
+
+  unsigned _clock_count;
 };
 
 class stream_generator
   : public abstract_traffic_generator
 {
-  unsigned _current_cycle_mod;
   unsigned _period;
 
 public:
@@ -61,21 +73,19 @@ public:
 
   void generate(void);
 
-  virtual void increase_time(void);
-
   // Set the emission period (in cycle).
   inline void set_period(unsigned period)
   { _period = period; }
 
   // Set the emission offset (in cycle).
   inline void set_offset(unsigned offset)
-  { _current_cycle_mod = offset; }
+  { set_clock_counter(offset); }
 };
 
 class burst_generator
   : public abstract_traffic_generator
 {
-  unsigned _current_long_cycle_mod, _current_short_cycle_mod;
+  unsigned _current_packet_count;
   unsigned _long_period, _short_period, _burst_length;
 
 public:
@@ -84,8 +94,6 @@ public:
   burst_generator(::sc_core::sc_module_name name);
 
   void generate(void);
-
-  virtual void increase_time(void);
 
   // Set the emission period (in cycle).
   inline void set_burst(
@@ -99,11 +107,8 @@ public:
   }
 
   // Set the emission offset (in cycle).
-  inline void set_offset(unsigned offset)
-  {
-    _current_long_cycle_mod = offset;
-    _current_short_cycle_mod = offset;
-  }
+  void set_offset(unsigned offset)
+  { set_clock_counter(offset); }
 };
 
 } // noc

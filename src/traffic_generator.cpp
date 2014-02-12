@@ -13,7 +13,14 @@ abstract_traffic_generator::abstract_traffic_generator(
   , activated("activated")
   , output("output")
   , _address_min(0)
-  , _address_max(1) {}
+  , _address_max(1)
+  , _clock_count(0)
+{
+  activated.initialize(false);
+  output.initialize(packet());
+
+  SC_THREAD(clock_counter);
+}
 
 
 void abstract_traffic_generator::emit_random_package(void)
@@ -22,21 +29,37 @@ void abstract_traffic_generator::emit_random_package(void)
   p.address = get_address();
   p.data = rand();
 
-  /* ^  _____
-   * |_|     |___continue
-   * ---------------------> traffic_generator.activated
-   * ^      ___
-   * |_____|   |_
-   * ---------------------> traffic_generator.acknoledge
-   */
+  // ^  _____
+  // |_|     |___continue...
+  // -----------------------> traffic_generator.activated
+  // ^      ___
+  // |_____|   |_
+  // -----------------------> traffic_generator.acknoledge
 
-  increase_time();
   output.write(p);
+
+  // Signal that the packet is ready.
   wait(clock.negedge_event());
   activated.write(true);
+
+  // With for acknolegment from the receiver.
   wait(acknoledge.posedge_event());
+  wait(clock.posedge_event());
   activated.write(false);
+
+  // Continue.
   wait(acknoledge.negedge_event());
+}
+
+
+void abstract_traffic_generator::clock_counter(void)
+{
+  while (true)
+  {
+    wait(clock.posedge_event());
+    ++_clock_count;
+//    std::cout << "count: " << _clock_count << std::endl;
+  }
 }
 
 
@@ -59,7 +82,6 @@ void abstract_traffic_generator::choose_new_random_address(void)
 
 stream_generator::stream_generator(sc_core::sc_module_name name)
   : abstract_traffic_generator(name)
-  , _current_cycle_mod(0)
   , _period(1)
 {
   SC_THREAD(generate);
@@ -75,26 +97,19 @@ void stream_generator::generate(void)
   {
     wait();
 
-    if (_current_cycle_mod == 0)
+    if (get_clock_count() >= _period)
+    {
+      reset_clock_count();
       emit_random_package();
-
-    increase_time();
+    }
   }
-}
-
-
-void stream_generator::increase_time(void)
-{
-  ++_current_cycle_mod;
-  _current_cycle_mod %= _period;
 }
 
 
 burst_generator::burst_generator(sc_core::sc_module_name name)
   : abstract_traffic_generator(name)
-  , _current_long_cycle_mod(0)
+  , _current_packet_count(0)
   , _long_period(1)
-  , _current_short_cycle_mod(0)
   , _short_period(1)
   , _burst_length(1)
 {
@@ -111,22 +126,19 @@ void burst_generator::generate(void)
   {
     wait();
 
-    if (_current_long_cycle_mod < _burst_length &&
-        _current_short_cycle_mod == 0)
+    if (get_clock_count() < _burst_length &&
+        (get_clock_count() / _short_period) >= _current_packet_count)
+    {
+      ++_current_packet_count;
       emit_random_package();
+    }
 
-    increase_time();
+    if (get_clock_count() >= _long_period)
+    {
+      reset_clock_count();
+      _current_packet_count = 0;
+    }
   }
-}
-
-
-void burst_generator::increase_time(void)
-{
-  ++_current_long_cycle_mod;
-  _current_long_cycle_mod %= _long_period;
-
-  ++_current_short_cycle_mod;
-  _current_short_cycle_mod %= _short_period;
 }
 
 
