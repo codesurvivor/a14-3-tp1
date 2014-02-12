@@ -78,12 +78,16 @@ void router::read_packet(void)
 
     // Acknoledge with shake hand protocol.
     {
+      //  ------------
+      //  |fifo ready|
+      //  ------------
+      //       |
+      // ^     v__
+      // |_____|  |_continue...
+      // ---------------------> router.acknoledge
       // ^  _____
       // |_|     |__
       // ---------------------> router.activated_in
-      // ^   _____
-      // |__|     |_continue...
-      // ---------------------> router.acknoledge
 
       acknoledge.write(true);
       wait(activated_in.negedge_event());

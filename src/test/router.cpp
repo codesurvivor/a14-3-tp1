@@ -38,11 +38,11 @@ public:
           noc::packet p = fifo[i].read();
           out[i].write(p);
 
-          std::cout
-              << "available(" << i << "): "
-              << (fifo[i].num_available() + 1) << " -> "
-              << "@[" << std::hex << unsigned(p.address) << "] = "
-              << std::dec << p.data << std::endl;
+//          std::cout
+//              << "available(" << i << "): "
+//              << (fifo[i].num_available() + 1) << " -> "
+//              << "@[" << std::hex << unsigned(p.address) << "] = "
+//              << std::dec << p.data << std::endl;
         }
       }
     }

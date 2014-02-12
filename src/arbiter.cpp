@@ -14,6 +14,9 @@ void arbiter::init_rand(void)
 
 uint8_t arbiter::choose_rand(void)
 {
+  // We can compute a random number in one clock step using pipelining
+  // for the different operations.
+
   uint8_t randomNumber = 0;
 
   for (int i = 0; i < 8; ++i)
@@ -63,8 +66,10 @@ void arbiter::init_lru(void)
 
 uint8_t arbiter::choose_lru(void)
 {
-  for(int i = 0; i < _nb_fifos; i++)
-    if(fifos[_lru_index[i]].num_available() > 0 )
+  // We can compute it in parallel with only one clock step.
+
+  for (int i = 0; i < _nb_fifos; i++)
+    if (fifos[_lru_index[i]].num_available() > 0 )
       return _lru_index[i];
 
   return std::numeric_limits<uint8_t>::max();
@@ -73,18 +78,16 @@ uint8_t arbiter::choose_lru(void)
 
 void arbiter::update_lru(char numFifo)
 {
+  // We can compute it in parallel with only one clock step.
+
   bool found = false;
 
   for(int i = 0; i < _nb_fifos; i++)
   {
-    if (found)
-    {
+    /**/ if (found)
       _lru_index[i-1] = _lru_index[i];
-    }
     else if (_lru_index[i] == numFifo)
-    {
       found = true;
-    }
   }
 
   _lru_index[_nb_fifos-1] = numFifo;
@@ -131,6 +134,11 @@ void arbiter::pushed_in_fifo(char idFifo)
 
 uint8_t arbiter::choose_fixed(void)
 {
+  // This can be done by adding a "callback" when a fifo is pushed,
+  // and another when a fifo is read.
+  // Callbacks, which update at each push, the index of the first
+  // non empty fifo.
+
   for (int i = 0; i < _nb_fifos; i++)
     if (fifos[i].num_available() > 0 )
       return i;
@@ -147,9 +155,11 @@ void arbiter::init_round_robin(void)
 
 uint8_t arbiter::choose_round_robin(void)
 {
-  for(int i = 0; i < _nb_fifos; i++)
-    if(fifos[(_last_used + 1 + i)%_nb_fifos].num_available() > 0 )
-      return (_last_used + 1 + i)%_nb_fifos;
+  // Same remark than fixed mode.
+
+  for (int i = 0; i < _nb_fifos; i++)
+    if (fifos[(_last_used + 1 + i) % _nb_fifos].num_available() > 0)
+      return (_last_used + 1 + i) % _nb_fifos;
 
   return std::numeric_limits<uint8_t>::max();
 }
@@ -166,7 +176,7 @@ void arbiter::process(void)
   //std::cout << "Entering in process thread." << std::endl;
   while (true)
   {
-    wait();
+    wait(clock.posedge_event());
 
     uint8_t choice = std::numeric_limits<uint8_t>::max();
     const int type = arb_type.read();
@@ -199,8 +209,17 @@ void arbiter::process(void)
     //std::cout << "Arbitering type: " << type << std::endl;
     //std::cout << "|\n--> Current choice: " << unsigned(choice) << "\n\n";
 
+    // Choice processing time.
+    wait(clock.negedge_event());
+    wait(clock.posedge_event());
+    wait(clock.negedge_event());
+
     packet pack= fifos[choice].read();
     output.write(pack);
+
+    // Update processing time.
+    wait(clock.posedge_event());
+    wait(clock.negedge_event());
 
     update(choice);
   }
