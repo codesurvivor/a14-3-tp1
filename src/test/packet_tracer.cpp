@@ -7,12 +7,14 @@ namespace test
 
 packet_tracer::packet_tracer(
     const sc_core::sc_module_name &name,
-    unsigned input_nb)
+    unsigned input_nb,
+    const std::string &output_file)
   : sc_core::sc_module(name)
   , clock("clock")
   , _input_nb(input_nb)
   , _watcher_last_id(0)
   , _current_clock_time(0)
+  , _output_file(output_file)
 {
   // Initialize inputs.
   {
@@ -62,23 +64,24 @@ packet_tracer::~packet_tracer(void)
     std::free(inputs);
   }
 
-  // Compute and display statistics.
+  // Compute, save and display statistics.
   {
-    std::cout << "---------------------------------------------------------\n";
+    std::stringstream ss;
+
+    ss << "---------------------------------------------------------\n";
 
     // Maximal packet life time.
     {
       assert(
             _packet_life_time_counts.rbegin() !=
           _packet_life_time_counts.rend());
-      std::cout
-          << "| Max packet life time      | "
-          << _packet_life_time_counts.rbegin()->first
-          << " clock steps."
-          << std::endl;
+      ss << "| Max packet life time      | "
+         << _packet_life_time_counts.rbegin()->first
+         << " clock steps."
+         << std::endl;
     }
 
-    std::cout << "---------------------------------------------------------\n";
+    ss << "---------------------------------------------------------\n";
 
     // Mean packet life time.
     {
@@ -94,28 +97,26 @@ packet_tracer::~packet_tracer(void)
         count += it->second;
       }
 
-      std::cout
-          << "| Mean packet life time     | "
-          << (double(sum)/count)
-          << " clock steps."
-          << std::endl;
+      ss << "| Mean packet life time     | "
+         << (double(sum)/count)
+         << " clock steps."
+         << std::endl;
     }
 
-    std::cout << "---------------------------------------------------------\n";
+    ss << "---------------------------------------------------------\n";
 
     // Maximal packet trasit time.
     {
       assert(
             _packet_transit_time_counts.rbegin() !=
           _packet_transit_time_counts.rend());
-      std::cout
-          << "| Max packet transit time   | "
-          << _packet_transit_time_counts.rbegin()->first
-          << " clock steps."
-          << std::endl;
+      ss << "| Max packet transit time   | "
+         << _packet_transit_time_counts.rbegin()->first
+         << " clock steps."
+         << std::endl;
     }
 
-    std::cout << "---------------------------------------------------------\n";
+    ss << "---------------------------------------------------------\n";
 
     // Mean packet transit time.
     {
@@ -131,14 +132,41 @@ packet_tracer::~packet_tracer(void)
         count += it->second;
       }
 
-      std::cout
-          << "| Mean packet transit time  | "
-          << (double(sum)/count)
-          << " clock steps."
-          << std::endl;
+      ss << "| Mean packet transit time  | "
+         << (double(sum)/count)
+         << " clock steps."
+         << std::endl;
     }
 
-    std::cout << "---------------------------------------------------------\n";
+    ss << "---------------------------------------------------------\n";
+
+    // Put statistics in file.
+    {
+      std::ofstream stat_file(_output_file + "_stat.data");
+      stat_file << ss.str();
+      stat_file.flush();
+    }
+
+    // Display it.
+    {
+      std::cout << ss.str();
+      std::cout.flush();
+    }
+  }
+
+  // Save per packet informations.
+  {
+    std::ofstream packet_info_file(_output_file + "_packet_trace.data");
+
+    for (packet_info const& info : _full_trace)
+    {
+      packet_info_file
+          << std::get<0>(info) << ','
+          << std::get<1>(info) << ','
+          << std::get<2>(info) << std::endl;
+    }
+
+    packet_info_file.flush();
   }
 
   // Destroy remaining packets.
@@ -161,6 +189,7 @@ void packet_tracer::prepare_packet(noc::packet &p)
     p.extra = extra;
   }
 }
+
 
 void packet_tracer::prepare_packet_insertion_in_fifo(noc::packet &p)
 {
@@ -232,6 +261,12 @@ void packet_tracer::input_watcher(void)
               _current_clock_time - extra->creation_date);
         declare_packet_transit_time(
               _current_clock_time - extra->fifo_insertion_date);
+
+        _full_trace.push_back(
+              packet_info(
+                extra->creation_date,
+                extra->fifo_insertion_date,
+                _current_clock_time));
 
         assert(_packet_extra_set.count(extra));
         _packet_extra_set.erase(extra);

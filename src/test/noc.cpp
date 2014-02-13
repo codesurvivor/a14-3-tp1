@@ -25,7 +25,7 @@ void display_usage(std::string const& prog_name)
   std::cerr
       << "usage: "
       << prog_name
-      << " <nb_input> <nb_output> <arbiter_mode> <execution_time_ns>\n\n";
+      << " <nb_input> <nb_output> <arbiter_mode> <execution_time_ns> <stream_period>\n\n";
 
   display_arbitration();
 }
@@ -33,7 +33,7 @@ void display_usage(std::string const& prog_name)
 
 int sc_main(int argc, char **argv)
 {
-  if (argc < 5)
+  if (argc < 6)
   {
     display_usage(argv[0]);
 
@@ -44,7 +44,8 @@ int sc_main(int argc, char **argv)
       nb_input = std::atoi(argv[1]),
       nb_output = std::atoi(argv[2]),
       arbiter_mode = std::atoi(argv[3]),
-      execution_time_ns = std::atoi(argv[4]);
+      execution_time_ns = std::atoi(argv[4]),
+      stream_period = std::atoi(argv[5]);
 
   if (arbiter_mode >= noc::arbiter_mode::ARBITER_MODE_LAST)
   {
@@ -56,6 +57,20 @@ int sc_main(int argc, char **argv)
     display_arbitration();
 
     return 2;
+  }
+
+  // The output base name.
+  std::string output_file_basename;
+  {
+    std::stringstream ss;
+    ss << "noc_"
+       << nb_input << '_'
+       << nb_output << '_'
+       << arbiter_mode << '_'
+       << execution_time_ns << '_'
+       << stream_period;
+
+    output_file_basename = ss.str();
   }
 
   // The general clock.
@@ -72,7 +87,7 @@ int sc_main(int argc, char **argv)
   }
 
   // The packet tracer (get statistics on packets).
-  test::packet_tracer tracer("packet_tracer", nb_output);
+  test::packet_tracer tracer("packet_tracer", nb_output, output_file_basename);
   {
     tracer.clock.bind(clock);
     for (unsigned i = 0; i < nb_output; ++i)
@@ -101,7 +116,7 @@ int sc_main(int argc, char **argv)
 
       tg[i] = std::make_shared<noc::stream_generator>(ss.str().c_str());
       tg[i]->set_address_properties(0, nb_output);
-      tg[i]->set_period(3*(i+1));
+      tg[i]->set_period(stream_period);
 
       tg[i]->clock.bind(clock);
       tg[i]->activated.bind(noc.inputs_activated[i]);
@@ -115,7 +130,7 @@ int sc_main(int argc, char **argv)
   // Tracing.
   sc_core::vcd_trace_file* const file =
       reinterpret_cast<sc_core::vcd_trace_file*>(
-        sc_core::sc_create_vcd_trace_file("noc"));
+        sc_core::sc_create_vcd_trace_file(output_file_basename.c_str()));
   {
     sc_core::sc_trace(file, clock , "clock");
 

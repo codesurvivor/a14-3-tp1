@@ -7,6 +7,8 @@
 #include <set>
 #include <thread>
 #include <mutex>
+#include <list>
+#include <tuple>
 
 #include <systemc>
 
@@ -29,7 +31,8 @@ public:
 
   packet_tracer(
       sc_core::sc_module_name const& name,
-      unsigned input_nb);
+      unsigned input_nb,
+      std::string const& output_file);
 
   ~packet_tracer(void);
 
@@ -59,7 +62,7 @@ private:
 
   unsigned long _current_clock_time;
 
-  typedef std::map<unsigned, unsigned> packet_time_counter;
+  typedef std::map<unsigned long, unsigned> packet_time_counter;
   packet_time_counter _packet_life_time_counts;
   packet_time_counter _packet_transit_time_counts;
 
@@ -75,6 +78,15 @@ private:
 
   typedef std::set<packet_extra*> packet_extra_set;
   packet_extra_set _packet_extra_set;
+
+  typedef std::tuple<
+  unsigned long /* creation date */,
+  unsigned long /* insertion date */,
+  unsigned long /* death date*/> packet_info;
+  typedef std::list<packet_info> packet_full_trace;
+  packet_full_trace _full_trace;
+
+  std::string _output_file;
 };
 
 } // test

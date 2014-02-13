@@ -214,14 +214,9 @@ void arbiter::process(void)
     // Choice processing time.
     wait(clock.negedge_event());
     wait(clock.posedge_event());
-    wait(clock.negedge_event());
 
     packet pack= fifos[choice].read();
     output.write(pack);
-
-    // Update processing time.
-    wait(clock.posedge_event());
-    wait(clock.negedge_event());
 
     update(choice);
   }
