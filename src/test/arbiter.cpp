@@ -37,7 +37,10 @@ class packet_wrapper
 
 int sc_main(int argc, char **argv)
 {
-  sc_core::sc_clock clock;
+  sc_core::sc_clock clock(
+        "clock",
+        sc_core::sc_time(CLOCK_PERIOD_NS, sc_core::SC_NS));
+
   sc_core::sc_signal<noc::arbiter_mode> arb_type;
   sc_core::sc_signal<uint8_t> choice;
   sc_core::sc_signal<noc::packet> output;

@@ -29,6 +29,8 @@ void abstract_traffic_generator::emit_random_package(void)
   p.address = get_address();
   p.data = rand();
 
+  if (_callback) _callback(p);
+
   // ^  _____
   // |_|     |___continue...
   // -----------------------> traffic_generator.activated

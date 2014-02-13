@@ -120,4 +120,11 @@ noc::~noc(void)
 }
 
 
+void noc::set_marker_callback(const noc::marker_callback &callback)
+{
+  for (unsigned i = 0; i < _nb_input; ++i)
+    _routers[i].set_marker_callback(callback);
+}
+
+
 } // noc

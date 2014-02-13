@@ -125,8 +125,10 @@ void arbiter::update_fifo(unsigned char numFifo)
 
 void arbiter::pushed_in_fifo(char idFifo)
 {
+  std::lock_guard<std::mutex> lock(_init_id_mutex);
   _pushs_in_fifos.at(_in_fifos) = idFifo;
   ++_in_fifos;
+  assert(_in_fifos < _pushs_in_fifos.size());
 }
 
 
@@ -260,7 +262,7 @@ arbiter::arbiter(
   , output("output")
   , choice_out("fifo_choosen_index")
   , _nb_fifos(nb_fifo)
-  , _pushs_in_fifos(_nb_fifos*_fifo_depth, 0)
+  , _pushs_in_fifos(2*_nb_fifos*_fifo_depth, 0)
   , _lru_index(_nb_fifos, 0)
   , _fifo_depth(fifo_depth)
   , _id(0)
@@ -282,7 +284,7 @@ arbiter::arbiter(
   for (unsigned i = 0; i < _nb_fifos; ++i)
   {
     std::stringstream ss;
-    ss << "pushedInFifo" << i;
+    ss << "pushed_in_fifo" << i;
     ::sc_core::sc_process_handle handle =
         sc_core::sc_get_curr_simcontext()->create_thread_process(
           ss.str().c_str(), false,

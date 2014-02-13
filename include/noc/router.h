@@ -6,6 +6,7 @@
 #include <list>
 #include <sstream>
 #include <memory>
+#include <functional>
 
 #include <systemc>
 
@@ -20,7 +21,10 @@ class router
     : ::sc_core::sc_module
 {
 public:
+
   typedef router SC_CURRENT_USER_MODULE;
+
+  typedef std::function<void(packet&)> marker_callback;
 
   /// Port for the global clock.
   sc_core::sc_in<bool> clock;
@@ -37,12 +41,19 @@ public:
   /// Acknoledgment.
   sc_core::sc_out<bool> acknoledge;
 
-  /// Specify the functionality of router per clock cycle.
-  void main(void);
+public:
 
   router(::sc_core::sc_module_name name, unsigned output);
 
   ~router(void);
+
+  /*!
+   * @brief Set the packet marker callback.
+   *
+   * The marker callback is called when a packet is pushed in a fifo.
+   */
+  void set_marker_callback(marker_callback const& callback)
+  { _callback = callback; }
 
 protected:
 
@@ -51,8 +62,14 @@ protected:
 
 private:
 
+  /// Specify the functionality of router per clock cycle.
+  void main(void);
+
   /// Number of ouput ports.
   const unsigned _router_output_ports;
+
+  /// Fifo insertion packet marking callback.
+  marker_callback _callback;
 };
 
 } // noc

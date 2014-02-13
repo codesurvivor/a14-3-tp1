@@ -10,7 +10,8 @@ enum arbiter_mode : unsigned char
   LRU        = 1,
   FIFO       = 2,
   FIXED      = 3,
-  ROUNDROBIN = 4
+  ROUNDROBIN = 4,
+  ARBITER_MODE_LAST
 };
 
 struct packet;

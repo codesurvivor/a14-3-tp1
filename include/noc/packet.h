@@ -20,8 +20,13 @@ struct packet
   uint8_t address;
   int data;
 
+  // Field that can be used for benchmarking, spy, etc...
+  mutable void* extra;
+
   explicit inline packet(uint8_t add = 0, int data = 0)
-    : address(add), data(data) {}
+    : address(add), data(data), extra(nullptr) {}
+
+  packet(packet const&) = default;
 
 }; // struct packet
 
@@ -45,15 +50,15 @@ inline void sc_trace(
   // Write address.
   {
     std::ostringstream ss;
-    ss << name << ".address";
-    sc_trace(file, pack.address, ss.str(), 8);
+    ss << name << "@address";
+    file->trace(pack.address, ss.str(), 8);
   }
 
   // Write data.
   {
     std::ostringstream ss;
-    ss << name << ".data";
-    sc_trace(file, pack.data, ss.str(), 32);
+    ss << name << "@data";
+    file->trace(pack.data, ss.str(), 32);
   }
 }
 

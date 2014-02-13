@@ -48,6 +48,7 @@ private:
 public:
 
   typedef noc SC_CURRENT_USER_MODULE;
+  typedef router::marker_callback marker_callback;
 
   noc(::sc_core::sc_module_name name,
       unsigned nb_input,
@@ -55,6 +56,13 @@ public:
       unsigned fifo_depth = 16);
 
   virtual ~noc(void);
+
+  /*!
+   * @brief Set the packet marker callback.
+   *
+   * The marker callback is called when a packet is pushed in a fifo.
+   */
+  void set_marker_callback(marker_callback const& callback);
 
 private:
 

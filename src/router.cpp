@@ -74,6 +74,8 @@ void router::read_packet(void)
 
   // Put the packet in the right fifo.
   {
+    if (_callback) _callback(p);
+
     fifos[p.address].write(p);
 
     // Acknoledge with shake hand protocol.

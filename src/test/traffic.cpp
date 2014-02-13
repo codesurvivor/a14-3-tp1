@@ -16,7 +16,10 @@ int sc_main(int, char**)
   tg2.set_address_properties(2, 10);
   tg2.set_burst(100, 5, 20);
 
-  sc_core::sc_clock clock;
+  sc_core::sc_clock clock(
+        "clock",
+        sc_core::sc_time(CLOCK_PERIOD_NS, sc_core::SC_NS));
+
   tg1.clock.bind(clock);
   tg2.clock.bind(clock);
   tg1.acknoledge.bind(clock);
@@ -33,7 +36,7 @@ int sc_main(int, char**)
   sc_core::vcd_trace_file* const file =
       (sc_core::vcd_trace_file*) sc_core::sc_create_vcd_trace_file("traffic");
 
-  sc_core::sc_trace(file, clock         , "clock"         );
+  sc_core::sc_trace(file, clock        , "clock"         );
 
   sc_core::sc_trace(file, tg1.activated, "stream_active" );
   sc_core::sc_trace(file, tg1.output   , "stream_packet" );

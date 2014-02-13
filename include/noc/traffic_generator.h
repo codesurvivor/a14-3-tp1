@@ -1,5 +1,7 @@
 #include <cstdlib>
 
+#include <functional>
+
 #include <systemc>
 
 #include <noc/packet.h>
@@ -14,6 +16,7 @@ class abstract_traffic_generator
 public:
 
   typedef abstract_traffic_generator SC_CURRENT_USER_MODULE;
+  typedef std::function<void(packet&)> creation_callback;
 
   sc_core::sc_in<bool> clock;
   sc_core::sc_in<bool> acknoledge;
@@ -30,7 +33,12 @@ public:
     choose_new_random_address();
   }
 
-  abstract_traffic_generator(::sc_core::sc_module_name name);
+  abstract_traffic_generator(
+      ::sc_core::sc_module_name name);
+
+  void set_packet_creation_callback(
+      creation_callback const& callback)
+  { _callback = callback; }
 
 protected:
 
@@ -59,6 +67,8 @@ private:
   uint8_t _current_address_life_time;
 
   unsigned _clock_count;
+
+  creation_callback _callback;
 };
 
 class stream_generator

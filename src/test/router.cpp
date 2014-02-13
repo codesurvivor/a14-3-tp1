@@ -52,7 +52,9 @@ public:
 int sc_main(int argc, char** argv)
 {
   // Declare clock.
-  sc_core::sc_clock clock;
+  sc_core::sc_clock clock(
+        "clock",
+        sc_core::sc_time(CLOCK_PERIOD_NS, sc_core::SC_NS));
 
   noc::stream_generator tg1("stream_generator");
   {
@@ -106,7 +108,6 @@ int sc_main(int argc, char** argv)
     router1.input(stream_packet);
   }
 
-
   noc::router router2("router2", OUTPUT_NB);
 
   sc_core::sc_fifo<noc::packet> fifos2[OUTPUT_NB];
@@ -131,8 +132,8 @@ int sc_main(int argc, char** argv)
   {
     for (int i = 0; i < OUTPUT_NB; ++i)
     {
-      spy1.out[i](spy1_out[i]);
-      spy2.out[i](spy2_out[i]);
+      spy1.out[i].bind(spy1_out[i]);
+      spy2.out[i].bind(spy2_out[i]);
     }
   }
 
@@ -150,14 +151,14 @@ int sc_main(int argc, char** argv)
   for (int i = 0; i < OUTPUT_NB; ++i)
   {
     std::ostringstream ss;
-    ss << "fifo1." << i;
+    ss << "fifo_1_" << i;
     sc_core::sc_trace(file, spy1_out[i], ss.str());
   }
 
   for (int i = 0; i < OUTPUT_NB; ++i)
   {
     std::ostringstream ss;
-    ss << "fifo2." << i;
+    ss << "fifo_2_" << i;
     sc_core::sc_trace(file, spy2_out[i], ss.str());
   }
 
