@@ -3,7 +3,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use work.all;
 
 entity sw_4x1 is
-	Generic (fifo_size : integer);
+	Generic (fifo_size : integer :=8);
     Port ( 
 		  rst : in std_logic;
 		  clk : in std_logic;

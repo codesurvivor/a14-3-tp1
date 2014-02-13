@@ -39,18 +39,18 @@ begin
 					lru(2) <= lru(3);
 				end if;
 				if choice=lru(0) or choice=lru(1) or choice=lru(2) or choice=lru(3) then
-					lru(2) <= lru(3);
+					lru(3) <= lru(4);
 				end if;
 				if choice=lru(0) or choice=lru(1) or choice=lru(2) or choice=lru(3) or choice=lru(4) then
-					lru(2) <= lru(3);
+					lru(4) <= lru(5);
 				end if;
 				if choice=lru(0) or choice=lru(1) or choice=lru(2) or choice=lru(3) or choice=lru(4) or choice=lru(5)then
-					lru(2) <= lru(3);
+					lru(5) <= lru(6);
 				end if;
 				if choice=lru(0) or choice=lru(1) or choice=lru(2) or choice=lru(3) or choice=lru(4) or choice=lru(5) or choice=lru(6) then
-					lru(2) <= lru(3);
+					lru(6) <= lru(7);
 				end if;
-				lru(3) <= choice;
+				lru(7) <= choice;
 			end if;
 		end if;
 	end process;

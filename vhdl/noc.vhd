@@ -4,7 +4,7 @@ use work.all;
 
 entity noc is
 	Generic (
-			fifo_size_8x4 : integer := 8;
+			fifo_size_8x4 : integer := 0;
 			fifo_size_4x1 : integer := 8);
     Port ( 
 		  rst : in std_logic;

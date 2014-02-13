@@ -4,7 +4,7 @@ use work.all;
 
 entity sw_8x4 is
 	Generic (
-		fifo_size : integer;
+		fifo_size : integer := 0;
 		address_base : integer range 0 to 38 := 36
 			);
     Port ( 
@@ -67,14 +67,14 @@ architecture Behavioral of sw_8x4 is
 
 	--- Data
 	type data_array_type_x4 is array (3 downto 0) of std_logic_vector (39 downto 0);
-	type data_array_type_x8 is array (8 downto 0) of std_logic_vector (39 downto 0);
+	type data_array_type_x8 is array (7 downto 0) of std_logic_vector (39 downto 0);
 	type data_array_type_x8x4 is array (7 downto 0) of data_array_type_x4;
 	signal dout : data_array_type_x4 ;
 	signal din : data_array_type_x8 ;
 	signal fifo_entry : data_array_type_x8x4 ;
 	--- Handshake
 	type handshake_array_type_x4 is array (3 downto 0) of std_logic;
-	type handshake_array_type_x8x4 is array (8 downto 0) of handshake_array_type_x4;
+	type handshake_array_type_x8x4 is array (7 downto 0) of handshake_array_type_x4;
 	signal in_acks : std_logic_vector (7 downto 0) ;
 	signal in_reqs : std_logic_vector (7 downto 0) ;
 	signal out_acks : std_logic_vector (3 downto 0) ;
