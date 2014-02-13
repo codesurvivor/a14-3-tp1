@@ -25,7 +25,7 @@ void display_usage(std::string const& prog_name)
   std::cerr
       << "usage: "
       << prog_name
-      << " <nb_input> <nb_output> <arbiter_mode> <execution_time_ns> <stream_period>\n\n";
+      << " <nb_input> <nb_output> <fifo_depth> <arbiter_mode> <execution_time_ns> <stream_period>\n\n";
 
   display_arbitration();
 }
@@ -33,7 +33,7 @@ void display_usage(std::string const& prog_name)
 
 int sc_main(int argc, char **argv)
 {
-  if (argc < 6)
+  if (argc < 7)
   {
     display_usage(argv[0]);
 
@@ -41,11 +41,12 @@ int sc_main(int argc, char **argv)
   }
 
   unsigned
-      nb_input = std::atoi(argv[1]),
-      nb_output = std::atoi(argv[2]),
-      arbiter_mode = std::atoi(argv[3]),
-      execution_time_ns = std::atoi(argv[4]),
-      stream_period = std::atoi(argv[5]);
+      nb_input          = std::atoi(argv[1]),
+      nb_output         = std::atoi(argv[2]),
+      fifo_depth        = std::atoi(argv[3]),
+      arbiter_mode      = std::atoi(argv[4]),
+      execution_time_ns = std::atoi(argv[5]),
+      stream_period     = std::atoi(argv[6]);
 
   if (arbiter_mode >= noc::arbiter_mode::ARBITER_MODE_LAST)
   {
@@ -66,6 +67,7 @@ int sc_main(int argc, char **argv)
     ss << "noc_"
        << nb_input << '_'
        << nb_output << '_'
+       << fifo_depth << '_'
        << arbiter_mode << '_'
        << execution_time_ns << '_'
        << stream_period;
@@ -79,7 +81,7 @@ int sc_main(int argc, char **argv)
         sc_core::sc_time(CLOCK_PERIOD_NS, sc_core::SC_NS));
 
   // The noc module.
-  noc::noc noc("noc", nb_input, nb_output);
+  noc::noc noc("noc", nb_input, nb_output, fifo_depth);
   {
     noc.clock.bind(clock);
     for (unsigned i = 0; i < nb_output; ++i)
