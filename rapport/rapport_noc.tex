@@ -1,0 +1,123 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[francais]{babel}
+\usepackage[top=3cm, bottom=3cm, left=2.5cm, right=2.5cm]{geometry}
+\geometry{a4paper} 
+
+\usepackage{booktabs} 
+\usepackage{array} 
+\usepackage{multirow}
+\usepackage{paralist} 
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{verbatim} 
+
+\usepackage[output-decimal-marker={,}]{siunitx}
+\usepackage{amsmath}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{url}
+\graphicspath{{figures/}}
+
+\newcommand\cplot{\texttt{plot}}
+\newcommand\cstairs{\texttt{stairs}}
+\newcommand\SIi{\SI[separate-uncertainty]}
+\renewcommand\tt\texttt
+
+\title{Design d'un network on chip}
+
+\begin{document}
+\maketitle
+
+\section{Objectifs}
+	cadre noc
+	architecture proposée
+	contraintes perfs
+
+\section{Architecture - Modélisation SystemC}
+	Arbitreur
+	Générateur de traffic
+	Routeur
+	Simulation (à déterminer)
+	Protocole...
+
+\section{Implémentation}
+
+Cette section décrit un premier jet d'implémentation visant à déterminer un ordre de grandeur des performances atteignables et de la complexité du système
+
+\subsection{Protocole}
+La communication entre les composants se fait par un protocole à deux phases. Deux fils (requête et acquittement) sont ajoutés au bus de donné. Si ils sont au même niveau logique, le bus est considéré comme vide, sinon, il y a une donnée dessus. Ce protocole présente le désavantage de ne pas permettre de transmettre plus d'une donnée tous les deux cycles. En revanche, la conception de la FIFO est simplifiée.	
+
+\subsection{FIFO}
+Un étage de la FIFO est composé d'un banc de registre contenant au plus une donnée. On ajoute deux bascules contrôlant respectivement le fil de requête de cet étage et le fil d'acquittement du fil de l'étage précédent. Sur un front montant i l'étage précédent est plein et le présent est vide, le banc de registre copie la donnée et change l'état des bascules de contrôle. L'étage précédent est maintenant vide et l'étage actuel est plein.
+Une FIFO est composée d'une succession, éventuellement vide, d'étages.
+
+\subsection{Arbitre}
+On utilise un codage one-hot pour désigner l'indice de la FIFO choisie. l'indice $-1$ est codé par "$0\dots0$"
+\paragraph{Aléatoire}
+L'implémentation reprend le code SystemC. L'indice de la FIFO choisie est extrait sous forme binaire et converti. L'indice choisi est renouvellé à chaque coup d'horloge.
+\paragraph{Priorité fixe}
+Un indice est choisi si et seulement si la FIFO correspondant n'est pas vide et aucun des indice plus prioritaire n'est choisi.
+\paragraph{LRU}
+les indices sont stockés du moins récemment utilisé au plus récemment utilisé. L'indice en tête est choisi. Pour la mise à jour, un indice progresse d'une case vers le moins récemment utilisé si l'indice réellement choisi a été moins récemment utilisé.
+\paragraph{Priorité tournante}
+L'arbitre stocke le dernier indice utilisé et accorde la priorité au suivant. Un indice est choisi si et sulement si il n'est pas vide et il est prioritaire ou alors le précédent est prioritaire et vide ou alors le précesseur du précédent est prioritaire ou vide\ldots
+\paragraph{FIFO} Non implémenté.
+
+
+\subsection{Routeur}
+
+Pour chaque donnée reçue, le routeur décode l'adresse et inverse le bit de requête de la sortie correspondante. Les bits d'acquittements sont simplement aggrégé par des porte XOR et les données sont dirigées vers toutes les sorties.
+
+\subsection{Performance et coût}
+
+\subsubsection{Ressources logiques}
+Le tableau \ref{perfs-sw-4} montre les ressources utilisées par un switch 4 vers 1 sur un FPGA Cyclone II. On remarque d'une part qu'en terme de ressources, les FIFOs sont rapidement les plus coûteuses (il y a quatre FIFO par switch et chaque étage a une largeur de $40+2$ bits
+
+\begin{table}
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+Nombre d'étages de la fifo & Nombre de registres & Nombre de blocs logiques \\
+\hline
+0 & 93 & 181 \\
+8 & 1405 & 258 \\
+16 &  2717 & 312 \\
+32 & 5341 & 452 \\
+\hline \hline
+éléments par étages & 164 & 8 \\
+autres éléments & 93 & 184 \\
+\hline
+\end{tabular}
+\caption{Ressources requises sur un Cyclone II par un switch 4 vers 1 selon la taille des FIFOs}
+\label{perfs-sw-4}
+\end{table}
+
+\section{Méthodologie}
+	<Q,R,T>
+	Paramètres de choix : espace de conception
+	Extraction des paramètres des éléments matéreils
+	Simulation haut niveau et validation
+	Ouverture : adaptation au traffic réel
+
+\section{Réflexion}
+	Conception
+	Pareto
+	Outils de CAO
+	Simulation multiphysique
+	Mur de la simulation et extraction de modèle
+		équilibre on veut tout prendre en compte, on ne peut pas tout simuler en même temps
+		des paramètres globaux dépendent grandement de l'implémentation (ex: conso)
+	Repousser le front de Pareto ?
+		Ouvrir des nouveaux paramètres (ex 3D : ajouter une dimension)
+		Elargir les panels existant (ex : routeur optique)
+		=> comment ? "Recherche" puis intégration
+	Itération et convergence
+		itération : architecture -> simule -> analyse -> nouvelle archi *améliorée*
+		amélioration : analyse "intelligente" : idée de loi de variation, pb chaos non déterministe
+
+
+
+\end{document}
