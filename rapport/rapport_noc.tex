@@ -37,18 +37,93 @@
 	contraintes perfs
 
 \section{Architecture - Modélisation SystemC}
-	Arbitreur
-	Générateur de traffic
-	Routeur
-	Simulation (à déterminer)
-	Protocole...
+
+Cette section décrit la modélisation du système en SystemC.
+
+\subsection{Génération du traffic}
+TODO: à compléter (structure des paquets, données, signal d'activation)
+
+\subsection{Routeur}
+Nous faisons correspondre à chaque entrée du système un module routeur, connecté à autant de FIFO qu'il y a de sorties au système.
+Chacun de ces modules reçoit alors les données correspondant à son entrée en suivant un mécanisme de synchronisation
+de type handshake.
+
+Sur un front montant de l'horloge, si le signal d'activation a une valeur positive,
+le routeur lit un paquet et détermine la FIFO dans laquelle celui-ci doit être placé.
+Le routeur lit ensuite le nombre d'emplacements libres de cette FIFO.
+Si ce nombre est non nul, le paquet peut être écrit dans la FIFO.
+Sinon, le routeur attend que la FIFO se désemplisse.
+Une fois le paquet écrit dans la FIFO, le routeur émet un signal d'acquittement,
+puis attend que le signal d'activation reprenne une valeur négative.
+Une nouvelle valeur pourra alors être reçue suivant le même protocole.
+
+\subsection{Arbitrage}
+Similairement, nous faisons correspondre à chaque sortie du système un module d'arbitrage, connecté à autant de FIFO qu'il y a d'entrées au système.
+Chacun de ces modules reçoit également en entrée un signal définissant un choix de stratégie d'arbitrage, déterminant dans quel ordre
+les paquets en provenance des différentes entrées doivent être écrites en sortie.
+
+Dans la mesure où le choix de stratégie d'arbitrage peut changer à tout moment,
+l'abitrage se fait en 5 temps:
+lecture du choix de stratégie d'arbitrage,
+détermination de la FIFO sur laquelle lire le paquet (suivant la stratégie d'arbitrage choisie),
+lecture du paquet dans la FIFO correspondante (s'il y a au moins une FIFO non vide),
+écriture du paquet en sortie (ou d'une valeur par défaut si toutes les FIFO sont vides),
+et mise à jour de l'état interne du module en vue d'arbitrages futurs.
+
+La suite de cette partie détaille les différentes stratégies d'arbitrage modélisées et leur mise en oeuvre.
+
+\subsubsection{Arbitrage suivant des priorités fixes}
+Il s'agit de la stratégie d'arbitrage la plus simple: choisir la FIFO non vide la plus prioritaire.
+
+Pour chaque FIFO, en suivant un ordre déterminé, le module lit donc le signal correspondant au nombre
+de paquets disponibles.
+La première FIFO non vide est alors choisie.
+
+\subsubsection{Arbitrage en tourniquet}
+Il s'agit d'une stratégie assez similaires à la précédente.
+Le module choisit ici aussi la première FIFO non vide, en parcourant celles-ci dans un ordre déterminé,
+mais cette fois il les parcourt à partir de la dernière FIFO lue.
+
+Cette stratégie d'arbitrage nécessite de savoir à tout instant quelle est la dernière FIFO à avoir
+été lue.
+Il faut donc stocker cette information et la mettre à jour après chaque lecture.
+
+\subsubsection{Arbitrage par choix de la moins récente utilisation}
+Il s'agit cette fois de choisir la FIFO la moins récemment choisie.
+
+La mise en oeuvre de cette stratégie repose sur l'utilisation d'un registre interne
+dans lequel on stocke les indices des FIFOS par date de dernière utilisation, de la moins récente à la plus récente.
+Le module  choisit alors la première FIFO non vide, en parcourant celles-ci dans l'ordre où leurs indices sont stockés
+dans le registre.
+
+Après une lecture, pour mettre à jour le registre, on décale vers le début de celui-ci toutes les valeurs
+situées après celle correspondant à l'indice de la FIFO lue.
+Cette dernière est ensuite écrite dans la dernière case du registre.
+
+\subsubsection{Arbitrage de type FIFO}
+Cette stratégie d'arbitrage est la plus complexe de celles présentées ici:
+les paquets doivent être lus dans leur ordre d'arrivée, quelle que soit
+la FIFO dans laquelle ils ont été placés.
+
+Pour arriver à ce résultat, le module utilise un registre interne, initialement vide.
+A chaque fois qu'une variable est écrite dans une des FIFOs, l'indice de cette FIFO est écrit dans ce registre
+à une position correspondant au nombre de paquets présents dans l'ensemble des FIFOs.
+Inversement, à chaque fois qu'un paquet est lu dans une FIFO, la première occurence de l'indice de cette
+variable dans le registre est supprimée. Les valeurs du registres situées après cette occurence sont ensuite décalées vers le début du registre.
+
+Ainsi, la première case du registre correspond toujours à l'indice de la FIFO contenant le paquet le plus ancien.
+
+\subsubsection{Arbitrage aléatoire}
+Pour choisir aléatoirement une FIFO dans laquelle lire, le module génère des nombres aléatoires
+à l'aide d'un registre à décalage à rétroaction linéaire.
+Ce nombre est ensuite ramené entre 0 et le nombre de FIFOs non vides, ce qui indique laquelle d'entre elles doit être choisie.
 
 \section{Implémentation}
 
-Cette section décrit un premier jet d'implémentation visant à déterminer un ordre de grandeur des performances atteignables et de la complexité du système
+Cette section décrit un premier jet d'implémentation visant à déterminer un ordre de grandeur des performances atteignables et de la complexité du système.
 
 \subsection{Protocole}
-La communication entre les composants se fait par un protocole à deux phases. Deux fils (requête et acquittement) sont ajoutés au bus de donné. Si ils sont au même niveau logique, le bus est considéré comme vide, sinon, il y a une donnée dessus. Ce protocole présente le désavantage de ne pas permettre de transmettre plus d'une donnée tous les deux cycles. En revanche, la conception de la FIFO est simplifiée.	
+La communication entre les composants se fait par un protocole à deux phases. Deux fils (requête et acquittement) sont ajoutés au bus de données. Si ils sont au même niveau logique, le bus est considéré comme vide, sinon, il y a une donnée dessus. Ce protocole présente le désavantage de ne pas permettre de transmettre plus d'une donnée tous les deux cycles. En revanche, la conception de la FIFO est simplifiée.	
 
 \subsection{FIFO}
 Un étage de la FIFO est composé d'un banc de registre contenant au plus une donnée. On ajoute deux bascules contrôlant respectivement le fil de requête de cet étage et le fil d'acquittement du fil de l'étage précédent. Sur un front montant i l'étage précédent est plein et le présent est vide, le banc de registre copie la donnée et change l'état des bascules de contrôle. L'étage précédent est maintenant vide et l'étage actuel est plein.
