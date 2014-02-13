@@ -4,6 +4,8 @@ bin
 lib
 .*.swp
 *.vcd
+*.data
+*~
 rapport/*.aux
 rapport/*.log
 rapport/*.pdf

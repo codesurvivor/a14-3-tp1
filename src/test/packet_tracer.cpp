@@ -67,6 +67,7 @@ packet_tracer::~packet_tracer(void)
   // Compute, save and display statistics.
   {
     std::stringstream ss;
+    std::ofstream simple_stat(_output_file + "_simple_stat.data");
 
     ss << "---------------------------------------------------------\n";
 
@@ -79,6 +80,8 @@ packet_tracer::~packet_tracer(void)
          << _packet_life_time_counts.rbegin()->first
          << " clock steps."
          << std::endl;
+
+      simple_stat << _packet_life_time_counts.rbegin()->first << ',';
     }
 
     ss << "---------------------------------------------------------\n";
@@ -101,6 +104,8 @@ packet_tracer::~packet_tracer(void)
          << (double(sum)/count)
          << " clock steps."
          << std::endl;
+
+      simple_stat << (double(sum)/count) << ',';
     }
 
     ss << "---------------------------------------------------------\n";
@@ -114,6 +119,8 @@ packet_tracer::~packet_tracer(void)
          << _packet_transit_time_counts.rbegin()->first
          << " clock steps."
          << std::endl;
+
+      simple_stat << _packet_transit_time_counts.rbegin()->first << ',';
     }
 
     ss << "---------------------------------------------------------\n";
@@ -136,9 +143,12 @@ packet_tracer::~packet_tracer(void)
          << (double(sum)/count)
          << " clock steps."
          << std::endl;
+
+      simple_stat << (double(sum)/count);
     }
 
     ss << "---------------------------------------------------------\n";
+    simple_stat.flush();
 
     // Put statistics in file.
     {
