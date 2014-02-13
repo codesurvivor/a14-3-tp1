@@ -116,7 +116,7 @@ noc::~noc(void)
   // Free fifos.
   for (unsigned i = 0, end = _nb_input * _nb_output; i < end; ++i)
     _fifos[i].~fifo();
-  std::free(_arbiters);
+  std::free(_fifos);
 }
 
 
