@@ -1,0 +1,23 @@
+\section{Objectifs}
+
+Les besoins croissants en bande passante expliquent le recours
+aux technologies Network On Chip. En effet, les réseaux sur puce offrent des
+services plus étendus que les architectures à base de bus.
+
+
+Dans le cadre général, la conception d'un réseau de communication commence
+par la définition d'un modèle de communication. Dans notre cas, il s'agit de 32
+processeurs qui cherchent à communiquer de manière indifférenciée à 4 mémoires
+DDR2. Le sujet propose de diviser le réseau en deux sous-réseaux : une pour les
+communications des processeurs vers les mémoires (requêtes) et un autre pour les
+communication des mémoires vers les processeurs (réponses). Nous avons suivi
+cette proposition et nous sommes intéressés au premier sous réseau.
+
+Selon le cahier des charge, le réseau doit aussi :
+\begin{itemize}
+  \item garantir un débit de 100 Mbits/s pour chaque processeur,
+  \item garantir une latence maximale de 80 ns point à point,
+  \item permettre de configurer le réseau pour pouvoir utiliser différentes
+    politiques d'arbitrage.
+\end{itemize}
+
