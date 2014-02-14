@@ -18,6 +18,7 @@
 \usepackage{amsmath}
 \usepackage{caption}
 \usepackage{subcaption}
+\usepackage{appendix}
 \usepackage{url}
 \graphicspath{{figures/}}
 
@@ -205,56 +206,120 @@ T désigne le temps le temps de travail disponible. Nous avons totalisé environ
 
 \subsection{Méthodologie}
 
-La méthodologie proposée se décompose en 3 étapes détaillées ci-dessous :
+La méthodologie proposée se décompose en 4 étapes détaillées ci-dessous :
 \begin{enumerate}
 \item Le choix de l'espace de conception
+\item Affectation des variables
+\item Extraction des caratéristiques de l'implémentation
+\item Simulation haut niveau et validation
 \end{enumerate}
-
-Dans la méthodologie de conception qu'on propose il y a 3 étapes : 
+ 
 \paragraph{Choix de l'espace de conception}
 Le but de cet étape est de définir les constantes et les variables qui seront utilisées dans l'exploration. Pour les constantes de conception, nous avons fixé un protocole, l'architecture des switchs et du routeur et une modèle. Les variables sont alors la taille des FIFOs et l'agencement des switchs.
+ 
+On choisit \textit{a priori} un protocole car ce choix a une influence énorme sur les classes de composants. Si on avait plusieurs implémentations disponibles de chaque composant, le protocole aurait pu être une variable. Faute de temps et de ressources, nous avons fixé un protocole pour l'implémentation. Il nous faudrait encore un peu de temps pour faire coincider sur ce point le simulateur et l'implémentation.
 
 \paragraph{Affectation des variables}
+Cette étape fixe certains paramètres. Par exemple, nous avons commencé nos simulations d'un switch 4 vers 4 avec une taille de FIFO égale à 16. Cette étape permet d'acquérir des données spécifiques à la configuration dans les deux étapes suivantes.
 
 \paragraph{Extraction des caractéristiques de l'implémentation}
-Une fois les paramètres d'architecture fixés, il définir un simulateur et une implémentation. L'implémentation doit fournir au simulateur les caractéristiques du réseau en fonction du des variables de conception. Cela peut passer par un générateur de code VHDL écrit par exemple en Perl et ensuite des scripts qui compilent ce code et extraient les contraintes d'horloge, les latences et les débits des switchs.
+Une fois les paramètres d'architecture fixés, il faut définir une implémentation. L'implémentation doit fournir au simulateur les caractéristiques du réseau en fonction du des variables de conception. Cela peut passer par un générateur de code VHDL écrit par exemple en Perl et ensuite des scripts qui compilent ce code et extraient les contraintes d'horloge, les latences et les débits des switchs.
+
+Dans notre cas, certains paramètres comme le débit et la latence (en cycles) peuvent être directement déterminés à partir des paramètres généraux. La fréquence d'horloge en revanche nécessite une implantation sur une technologie et une analyse de timing.
 
 \paragraph{Simulation haut niveau et validation}
-Le simulateur récupère ces informations et simule le système complet soumis au(x) modèle(s) de traffic pour obtenir des indicateurs globaux de performance. Si ceux-ci sont satisfaisant, on s'arrête. Sinon, on passe à l'étape suivante.
+Le simulateur récupère ces informations et simule le système complet soumis au(x) modèle(s) de traffic pour obtenir des indicateurs globaux de performance. Si ceux-ci sont satisfaisant, on s'arrête. Sinon, on reprend l'étape 2.
 
-	
-
-    2)Extraction des paramètres des éléments matéreils
-
-    3)Simulation haut niveau et validation
-	-Les paramètres récupérés des éléments matériels permettrons d'annoter les modèles haut niveau (SystemC)
-	- La specification de l'application permet de définir un modèle de communication pour la simulation.
-	-La simulation (atteinte rapidement) permettra de valider le comportement de chaque modèle. 
-	
-
-    Ouverture : adaptation au traffic réel
-	<Q,R,T>
-	Paramètres de choix : espace de conception
-	Extraction des paramètres des éléments matéreils
-	Simulation haut niveau et validation
-	Ouverture : adaptation au traffic réel
+On peut se poser deux question :
+\begin{itemize}
+\item Comment choisir les nouveau paramètres ? Ici, on peut trouver des relations mathématiques et en déduire une direction de changement. Dans le cas général, plus complexe, il est probable que l'exploration se fasse un peu en aveugle ou avec un apprentissage au fur et à mesure.
+\item Et si on y arrive pas ? Il faut peut être choisir à nouveau les constantes si certaines peuvent être changée. Cela implique forcément un nouvel effort de conception d'implémentation. Cet indéterminisme dans la conception est malheureusement nécessaire.
+\end{itemize}
 
 \section{Réflexion}
-	Conception
-	Pareto
-	Outils de CAO
-	Simulation multiphysique
-	Mur de la simulation et extraction de modèle
-		équilibre on veut tout prendre en compte, on ne peut pas tout simuler en même temps
-		des paramètres globaux dépendent grandement de l'implémentation (ex: conso)
-	Repousser le front de Pareto ?
-		Ouvrir des nouveaux paramètres (ex 3D : ajouter une dimension)
-		Elargir les panels existant (ex : routeur optique)
-		=> comment ? "Recherche" puis intégration
-	Itération et convergence
-		itération : architecture -> simule -> analyse -> nouvelle archi *améliorée*
-		amélioration : analyse "intelligente" : idée de loi de variation, pb chaos non déterministe
 
+cette section décrit quelques réflexions provoquées par ce cours.
+
+\subsection{Conception}
+
+Actuellement, on assiste à une véritable explosion du marché des systèmes temps réel.Toutes les nouvelles cartes sont équipées de coupleurs Ethernet pour les accès Internet. L'utilisation des systèmes temps réel embarqués avec un accès réseau est maintenant très répandue dans plusieurs domaines, notamment les télécommunications, les automatismes industriels, l'industrie de l’automobile, etc. La taille de la partie logicielle de ces dispositifs est de plus en plus importante. Elle représente une contrainte très significative sur les ressources qui sont, par essence, comptées.
+
+Devant cette évolution vertigineuse, l'ingénierie, sous ses différents domaines, paraît l'élément clé du processus de conception. La collaboration entre les différentes disciplines, assurée par une approche ingénierie système, a permis de mettre au point des solutions aux demandes industrielles les plus complexes.
+
+La solution générée peut répondre aux cahier des charges certes, mais est elle efficace?
+
+\subsection{Front de Pareto}
+
+D'abord, pour la conception d'un système complexe qui met en jeu plusieurs disciplines, l'optimisation est multiobjectifs et l'optimum global n'existe pas.
+L'espace des possibles est divisé en deux familles de solutions :
+\begin{itemize}
+\item les solutions uniformément améliorables : une solution de cette famille peut être améliorée suivant un critère sans qu'aucun autre critère ne soit détérioré.
+\item les solutions non uniformément améliorables : une solution de cette famille ne peut être améliorée suivant un ou plusieurs critères sans détériorer au moins un des autres critères. Ces solution forment la frontière de Pareto.
+\end{itemize}
+
+Pour des produits complexes, il est possible que les processus de conception ne permettent pas d'atteindre un optimum (de Pareto). La concurrence et l'évolution des technologies, par exemple dans le domaine des semi conducteurs, forcera les industries à transiter vers une nouvelle ère de conception. Cette ère serait caractérisée par un certain degrés d'automatisation du processus de conception qui limitera les biais apportés par le concepteur humain.
+
+\subsection{Outils de CAO}
+
+Pour simuler la fatigue au niveau de la structure mécanique d'un drone un ingénieur pourrait utiliser un outil tel que CATIA ou ABACUS. Pour analyser temporellement un modèle de réseau embarqué son coéquipier utilisera VNA MENTOR GRAPHICS. Pour modéliser un circuit électronique, il existe aussi de très nombreux outils.
+
+On peut alors penser la conception comme un ensemble de contraintes définies dans au moyen de l'ingénierie système. Les contraintes sont ensuite réparties en domaines et pour chaque domaine, la conception s'effectue avec des outils spécifiques. Dans ce scénario et pour chaque discipline l'ingénieur utilise une interface graphique ou un environnement pour décrire son modèle et le simuler. L'optimisation se limite à ce modèle suivant les résultats de simulation. La question est toujours : jusqu'à quel point l'ingénieur est-il capable d'optimiser ?
+
+L’auto-génération de code ou l’auto-conception à partir des spécifications fixées dans le cahier des charges est donc importante. On peut distinguer deux approches : d'un côté, un algorithme qui part d’une architecture réalisée arbitrairement et, à chaque itération réalise les modifications sur l’architecture en minimisant un ou plusieurs coûts donnés, de l'autre côté, un algorithme qui transforme un ensemble de contraintes en une architecture qui les respecte.
+
+~
+
+Illustrons ceci avec un exemple. Une entreprise veut concevoir un produit qui contiendra un réseau embarqué et ses ingénieurs disposent d'une licence VNA MENTOR GRAPHICS. L'architecture de communication est suffisamment complexe pour qu'une architecture choisie arbitrairement soit ne soit a priori pas optimale voire même respectueuse des contrainte.
+
+Pour réaliser un outil de génération d’architecture, il faudrait utiliser l’interfacce import/export de VNA Mentor Graphics qui supporte FIBEX XML. L’utilisation FIBEX parait adéquate la situation vu qu’il s’agit d’un format XML utilisé pour décrire des systèmes de communication orientée messages complexes. La réalisation de l’outil revient principalement à ètre capable de traduire des spécifications en entrée sous forme d’une description XML en sortie et de coupler cette étape à l’outil VNA. Les différentes étapes sont :
+\begin{enumerate}
+\item Décrire les modules demandés et une architecture de communication, qui répond aux spécifications mais non optimale, sous VNA Mentor Graphics. 
+\item Exporter la description de l’architecture sous format FIBEX XML.
+\item Réaliser l’étape 0 de l’algorithme d’optimisation sur la description XML.
+\item Importer l’architecture par l’outil VNA Mentor Graphics.
+\item Simulation de l’architecture et obtention des résultats de simulation.
+\item Si résultats de simulation ne répond pas aux objectifs de minimisation, refaire l’étape 2, 3,4,5,6.
+\end{enumerate}
+
+Les principales difficultés qui émergent de cet  exemple sont 1) lla description initiale d'une architecture, cette étape pourrait aussi être automatisée, 2) la convergence de l'algorithme.
+
+~
+
+\`A partir de cette réflexion une nouvelle vision se dégage : celle d'un processus de conception où l'intervention de l'ingénieur est limitée par l'automatisation de modèlisation/simulation/optimisation pour les domaines respectifs.
+
+Jusqu'à présent l'innovation réside dans l'automatisation/optimisation de la conception pour chacune des disciplines séparément. En effet, l'optimisation pour chaque discipline pourrait prendre des contraintes qui découlent d'autres processus de conception parallèles, mais l'amélioration ne peut porter que sur les variables du processus en question.  
+
+\subsection{Simulation multiphysique}
+
+Dans ce sens, il devient légitime de penser à une optimisation multiobjective et  donc une simulation multiphysique. Cela est il possible?
+
+Prenons le cas MATLAB/SIMULINK : propose une interface avec DYMOLA et avec du code C/C++, VHDL ou SystemC. DYMOLA admet une interface avec CATIA\ldots
+
+En somme, la simulation d'un système complet nécessite de centraliser l'accès aux différents modèles à travers un ensemble de plug-ins. Il devient ensuite possible d'automatiser la conception d'un système complexe en ne disposant que du cahier des charges à l'instant de départ.
+
+\subsection{Mur de la simulation et extraction de Modèle}
+
+Néanmoins, cette approche d'intégration brutale n'est pas faisable. On ne peut pas espérer simuler en un temps raisonnable ne serait ce qu'un millier de transistors dont on aurait définit la géométrie par éléments finis et en résolvant de manière numérique les équations différentielles thermiques et quantiques. Plus la simulation est grande en taille, plus il faut un modèle haut-niveau et rapide à simuler.
+
+Il faut donc être capable d'extraire du plus bas niveau des paramètres pour les modèles du niveau supérieur et ainsi récursivement. Cela entraîne une déperdition d'information à mesure qu'on la synthétise, surtout en ce qui concerne les interdépendance de ces paramètres. Dans le cas d'un inverseur CMOS par exemple, si on ne considère dans une technologie donnée que la dépendance entre la géométrie des transistors, la température et le temps de propagation, on n'oublie la dépendance avec les tensions d'alimentation et l'analyse CEM perd en précision. Néanmoins, dans cet exemple, on peut faire des encadrements assez précis si on limite les perturbations autorisées sur les alimentations. Ainsi, de manière générale, la qualité d'un modèle dépend de la précision de la prédiction des paramètres d'entrée en fonction des paramètres de sorties mais aussi de la définition du domaine de validité du modèle.
+
+Même si ce paradigme d'extraction de modèle permet probablement de simuler avec précision un système, son application à l'auto-conception est mise en difficulté par la nécessité de construire ces modèles. On peut peut-être espérer l'émergence de standards pour ces modèles à la manière du standard IBIS pour les buffers d'entrée/sortie et la mise à disposition des modèles par les fournisseurs d'IPs aux concepteurs de systèmes.
+
+\subsection{Atteindre etrepousser le front de Pareto}
+
+Supposons que le problème de l'auto-conception puisse se poser comme un problème d'agencement d'un ensemble d'IPs.
+
+Dans notre méthodologie comme dans de nombreux flots de conception présentés en cours, la conception se fait par itérations : si le modèle ne correspond pas aux attentes, on l'ajuste. On est confronté à toutes les problématiques d'exploration et d'optimisation en grande dimension et il faut avoir recourt aux techniques appropriées. De manière tout à fait profane, il nous semble que le point clé est d'arriver à extrapoler les interdépendances des paramètres pour déterminer la direction d'un optimum et espérer une convergence vers un point intéressant. Le problème est que les interdépendances sont peut-être très chaotiques.
+
+Même si le concepteur peut espérer concevoir un système optimal au sens de Pareto, il n'a pas de mécanismes à sa disposition pour repousser la frontière. En effet, le front de Pareto est délimité par les IPs auxquelles il a accès. Il peut espérer concevoir un système optimal au sens de Pareto mais n'a pas de mécanismes à sa disposition pour repousser la frontière. Il n'a peut-être pas la compréhension suffisante des modèles pour discuter avec les fournisseurs d'un nouveau composant. 
+
+On voit apparaître la nécessité d'une dynamique entre les entité que l'on a nommées << concepteurs >> et les << fournisseurs >> pour permettre l'innovation. Il s'agit soit d'élargir les paramètres de conception (nouvelle technologie de circuits intégrés par exemple) ou de rajouter une dimension (circuits 3D par exemple). Il semble que les concepteurs puissent communiquer leur compréhension de la frontière, leurs besoins pour que les fournisseurs puissent chercher des axes de recherche. Malheureusement, comme aucun modèle de modèle n'est parfait, le format de modélisation de sera peut-être pas à même d'inclure ces nouveaux paramètres. Il faudra donc du temps et de l'argent pour que des nouvelles technologies soient complétement intégrées dans les process d'auto-conception. On peut donc supposer que les grands groupes qui se seront établis ne seront pas forcément moteurs dans le développement mais plutôt des intégrateurs d'innovations provenant de plus petites structures.
+
+\subsection{Bilan}
+
+En résumé, la complexité des problèmes fait apparaître des frontières de Pareto. L'optimisation requiert un décloisonnement des domaines et l'automatisation du processus de conception. Une conception automatique et itérative nécessite de la simulation multiphysique qui doit s'appuyer sur des modèles synthétiques. L'utilisateur des modèles dépend de ceux les maîtrisant. Une interaction est nécessaire pour une synergie des acteurs. Cette synergie offre des perspectives de dynamisme.
+
+Il s'agit d'une présentation assez simplifiée qui correspond aux grandes lignes que nous avons pu distinguer dans la vision offerte jusqu'à présent par nos cours et nos expériences
 
 
 \end{document}
