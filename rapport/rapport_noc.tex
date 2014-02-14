@@ -32,9 +32,17 @@
 \maketitle
 
 \section{Objectifs}
-	cadre noc
-	architecture proposée
-	contraintes perfs
+
+Les besoins croissants en bande passante de communication expliquent le recours aux technologies Network On Chip. Les réseaux sur puce offrent, en effet, des services plus étendus que les architectures à base de bus.
+
+Dans le cadre général, la conception de la communication par réseaux commence par la définition d'un modèle de communication. Dans notre cas, il s'agit de 32 processeurs qui cherchent à communiquer de manière indifférenciée à 4 mémoires DDR2. Le sujet propose de diviser le réseau en deux sous-réseaux : une pour les communications des processeurs vers les mémoires (requêtes) et un autre pour les communication des mémoires vers les processeurs (réponses). Nous avons suivi cette proposition et nous sommes intéressés au premier sous réseau.
+
+Selon le cahier des charge, le réseau doit aussi :
+\begin{itemize}
+\item garantir un débit de 100 Mbits/s pour chaque processeur,
+\item garantir une latence maximale de 80 ns point à point,
+\item permettre de configurer le réseau pour pouvoir utiliser différentes politiques d'arbitrage.
+\end{itemize}
 
 \section{Architecture - Modélisation SystemC}
 
@@ -45,8 +53,7 @@ TODO: à compléter (structure des paquets, données, signal d'activation)
 
 \subsection{Routeur}
 Nous faisons correspondre à chaque entrée du système un module routeur, connecté à autant de FIFO qu'il y a de sorties au système.
-Chacun de ces modules reçoit alors les données correspondant à son entrée en suivant un mécanisme de synchronisation
-de type handshake.
+Chacun de ces modules reçoit alors les données correspondant à son entrée en suivant un mécanisme de synchronisation de type handshake.
 
 Sur un front montant de l'horloge, si le signal d'activation a une valeur positive,
 le routeur lit un paquet et détermine la FIFO dans laquelle celui-ci doit être placé.
@@ -149,7 +156,9 @@ Pour chaque donnée reçue, le routeur décode l'adresse et inverse le bit de re
 \subsection{Performance et coût}
 
 \subsubsection{Ressources logiques}
-Le tableau \ref{perfs-sw-4} montre les ressources utilisées par un switch 4 vers 1 sur un FPGA Cyclone II. On remarque d'une part qu'en terme de ressources, les FIFOs sont rapidement les plus coûteuses (il y a quatre FIFO par switch et chaque étage a une largeur de $40+2$ bits
+Le tableau \ref{perfs-sw-4} montre les ressources utilisées par un switch 4 vers 1 sur un FPGA Cyclone II. On remarque d'une part qu'en terme de ressources, les FIFOs sont rapidement les plus coûteuses (il y a quatre FIFO par switch et chaque étage a une largeur de $40+2$ bits). Ainsi, chaque étage de FIFO dans les switchs 8 vers 4 coûte $32*164=5248$ registres. Pour les switchs 4 vers 1, un étage n'utilise que 656 registres. Au total, le réseau complet avec des FIFOs de longueur 8 utilise de l'ordre de 50 000 registres.
+
+Cela n'est pas bloquant pour une utilisation ou une émulation sur FPGA. Le nombre d'entrée/sorties (1600) est beaucoup plus gênant.
 
 \begin{table}
 \centering
@@ -169,6 +178,16 @@ autres éléments & 93 & 184 \\
 \caption{Ressources requises sur un Cyclone II par un switch 4 vers 1 selon la taille des FIFOs}
 \label{perfs-sw-4}
 \end{table}
+
+\subsubsection{Débit et latence}
+\`A cause du protocole, le débit maximal du circuit est limité à 1 élément par entrée/sortie par 2 cycles d'horloge.
+
+La latence minimum d'une FIFO de $N$ étages varie de $N$ cycles si la FIFO est vide à $2N$ si elle est pleine. Le routeur ajoute un cycle de latence et la sortie aussi. Finalement, la latence d'un switch est comprise entre $N+2$ et $2N+2$.
+
+\subsubsection{Fréquence d'horloge}
+Compte tenu du cahier des charges, nous évaluons surtout la qualité de l'implémentation par sa fréquence d'horloge maximale. Le réseau entier étant trop gros (en terme d'entrées/sorties) pour les FPGAs Xilinx, nous n'avons pu que synthétiser, placer et router des morceaux du réseau. Nous supposons ensuite que, les interconnexions étant simples et les contraintes de placement pas trop fortes, la performance générale serait obtenue en gardant la moins bonne performance.
+
+Nous nous sommes intéressés aux switchs. Pour les switchs 4 vers 1, la fréquence maximale est de 180 MHz pour un FPGA Virtex 5 (XC5VFX70T). Pour les switchs 8 vers 4, la fréquence maximale est de 100 MHz sur un Virtex 5 et 170 MHz sur un Virtex 7. Le chemin critique part de la sortie de FIFOs, passe par la logique de choix des arbitreurs, le multiplexeur de ces choix, le multiplexeur vers les données de sorties et arrive sur la bascule de sortie. Nous n'avons pas eu le temps de découper ce chemin. C'est en théorie possible car les arbitreurs n'ont à faire des choix que un cycle sur deux. Pour des ASICs, on peut s'attendre, selon la technologie de fabrication, à une multiplication de la fréquence par au moins 3. Néanmoins, nous n'avons pas pu synthétiser notre circuit vers un ASIC.
 
 \section{Méthodologie}
 
