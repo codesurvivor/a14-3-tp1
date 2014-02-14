@@ -1,15 +1,18 @@
-function [ ] = display_stat_for_mode( ...
+function [ ...
+    life_time_max_z, life_time_mean_z, ...
+    transit_time_max_z, transit_time_mean_z ] = ...
+    display_stat_for_mode( ...
     nb_input, nb_output, arbiter_mode, exec_time)
 
 %% Init.
 
-x = zeros(5*6);
-y = zeros(5*6);
+x = zeros(5*6,1);
+y = zeros(5*6,1);
 
-life_time_max_z = zeros(5*6);
-life_time_mean_z = zeros(5*6);
-transit_time_max_z = zeros(5*6);
-transit_time_mean_z = zeros(5*6);
+life_time_max_z = zeros(5*6,1);
+life_time_mean_z = zeros(5*6,1);
+transit_time_max_z = zeros(5*6,1);
+transit_time_mean_z = zeros(5*6,1);
 
 current = 1;
 

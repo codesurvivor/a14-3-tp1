@@ -1,46 +1,87 @@
 \section{Méthodologie}
 
-D'abord, il opportun de rappeler que ce projet a pour vocation de nous sensibiliser à la conception des MPOC pour une application donnée et dans un contexte donné. Mème si on a été amenés à concevoir une architecture symètrique, l'un des objectifs de ce module est de se démarquer de cette vision esthétique des systèmes on chip qui pousse à envisager des matrices régulières de communication et donc des architectures régulières.
+D'abord, il opportun de rappeler que ce projet a pour vocation de nous
+sensibiliser à la conception des MPOC pour une application donnée et dans un
+contexte donné. Même si on a été amenés à concevoir une architecture symétrique,
+l'un des objectifs de ce module est de se démarquer de cette vision esthétique
+des systèmes on chip qui pousse à envisager des matrices régulières de
+communication et donc des architectures régulières.
 
 \subsection{Contraintes}
 
 La conception se réalise par rapport à un espace de contraintes <Q,R,T>.
 
-Q designe les contraintes de qualité de service. Le modèle de communication à satisfaire est une communication indifférenciée des processeurs avec les mémoires avec des contraintes de débit et de latence.
+Q désigne les contraintes de qualité de service. Le modèle de communication à
+satisfaire est une communication indifférenciée des processeurs avec les
+mémoires avec des contraintes de débit et de latence.
 
-R désigne les ressources disponibles. Dans notre cas, nous sommes 4 et disposons d'un certain nombre de machines. Au niveau des ressources logicielles, nous disposons de nombreuses copies de SystemC et une machine pour ISE (liscence d'évaluation 30 jours) et une autre pour Quartus et la chaîne Alliance.
+R désigne les ressources disponibles. Dans notre cas, nous sommes 4 et disposons
+d'un certain nombre de machines. Au niveau des ressources logicielles, nous
+disposons de nombreuses copies de SystemC et une machine pour ISE (licence
+d'évaluation 30 jours) et une autre pour Quartus et la chaîne Alliance.
 
-T désigne le temps le temps de travail disponible. Nous avons totalisé environs 46 heures de travail jusqu'ici. L'utilisation de la méthodologie proposée nécessiterait probablement encore 50 heures.
+T désigne le temps le temps de travail disponible. Nous avons totalisé environs
+46 heures de travail jusqu'ici. L'utilisation de la méthodologie proposée
+nécessiterait probablement encore 50 heures.
 
 \subsection{Méthodologie}
 
 La méthodologie proposée se décompose en 4 étapes détaillées ci-dessous :
 \begin{enumerate}
-\item Le choix de l'espace de conception
-\item Affectation des variables
-\item Extraction des caratéristiques de l'implémentation
-\item Simulation haut niveau et validation
+  \item Le choix de l'espace de conception
+  \item Affectation des variables
+  \item Extraction des caractéristiques de l'implémentation
+  \item Simulation haut niveau et validation
 \end{enumerate}
 
 \paragraph{Choix de l'espace de conception}
-Le but de cet étape est de définir les constantes et les variables qui seront utilisées dans l'exploration. Pour les constantes de conception, nous avons fixé un protocole, l'architecture des switchs et du routeur et une modèle. Les variables sont alors la taille des FIFOs et l'agencement des switchs.
 
-On choisit \textit{a priori} un protocole car ce choix a une influence énorme sur les classes de composants. Si on avait plusieurs implémentations disponibles de chaque composant, le protocole aurait pu être une variable. Faute de temps et de ressources, nous avons fixé un protocole pour l'implémentation.
+Le but de cet étape est de définir les constantes et les variables qui seront
+utilisées dans l'exploration. Pour les constantes de conception, nous avons fixé
+un protocole, l'architecture des switchs et du routeur et une modèle. Les
+variables sont alors la taille des FIFOs et l'agencement des switchs.
+
+On choisit \textit{a priori} un protocole car ce choix a une influence énorme
+sur les classes de composants. Si on avait plusieurs implémentations disponibles
+de chaque composant, le protocole aurait pu être une variable. Faute de temps et
+de ressources, nous avons fixé un protocole pour l'implémentation.
 
 \paragraph{Affectation des variables}
-Cette étape fixe certains paramètres. Par exemple, nous avons commencé nos simulations d'un switch 4 vers 4 avec une taille de FIFO égale à 16. Cette étape permet d'acquérir des données spécifiques à la configuration dans les deux étapes suivantes.
+
+Cette étape fixe certains paramètres. Par exemple, nous avons commencé nos
+simulations d'un switch 4 vers 4 avec une taille de FIFO égale à 16. Cette étape
+permet d'acquérir des données spécifiques à la configuration dans les deux
+étapes suivantes.
 
 \paragraph{Extraction des caractéristiques de l'implémentation}
-Une fois les paramètres d'architecture fixés, il faut définir une implémentation. L'implémentation doit fournir au simulateur les caractéristiques du réseau en fonction du des variables de conception. Cela peut passer par un générateur de code VHDL écrit par exemple en Perl et ensuite des scripts qui compilent ce code et extraient les contraintes d'horloge, les latences et les débits des switchs.
 
-Dans notre cas, certains paramètres comme le débit et la latence (en cycles) peuvent être directement déterminés à partir des paramètres généraux. La fréquence d'horloge en revanche nécessite une implantation sur une technologie et une analyse de timing.
+Une fois les paramètres d'architecture fixés, il faut définir une
+implémentation. L'implémentation doit fournir au simulateur les caractéristiques
+du réseau en fonction du des variables de conception. Cela peut passer par un
+générateur de code VHDL écrit par exemple en Perl et ensuite des scripts qui
+compilent ce code et extraient les contraintes d'horloge, les latences et les
+débits des switchs.
+
+Dans notre cas, certains paramètres comme le débit et la latence (en cycles)
+peuvent être directement déterminés à partir des paramètres généraux. La
+fréquence d'horloge en revanche nécessite une implantation sur une technologie
+et une analyse de timing.
 
 \paragraph{Simulation haut niveau et validation}
-Le simulateur récupère ces informations et simule le système complet soumis au(x) modèle(s) de traffic pour obtenir des indicateurs globaux de performance. Si ceux-ci sont satisfaisant, on s'arrête. Sinon, on reprend l'étape 2.
+
+Le simulateur récupère ces informations et simule le système complet soumis
+au(x) modèle(s) de trafic pour obtenir des indicateurs globaux de performance.
+Si ceux-ci sont satisfaisant, on s'arrête. Sinon, on reprend l'étape 2.
 
 On peut se poser deux question :
 \begin{itemize}
-\item Comment choisir les nouveau paramètres ? Ici, on peut trouver des relations mathématiques et en déduire une direction de changement. Dans le cas général, plus complexe, il est probable que l'exploration se fasse un peu en aveugle ou avec un apprentissage au fur et à mesure.
-\item Et si on y arrive pas ? Il faut peut être choisir à nouveau les constantes si certaines peuvent être changée. Cela implique forcément un nouvel effort de conception d'implémentation. Cet indéterminisme dans la conception est malheureusement nécessaire.
+  \item Comment choisir les nouveau paramètres ? Ici, on peut trouver des
+    relations mathématiques et en déduire une direction de changement. Dans le cas
+    général, plus complexe, il est probable que l'exploration se fasse un peu en
+    aveugle ou avec un apprentissage au fur et à mesure.
+  \item Et si on y arrive pas ? Il faut peut être choisir à nouveau les
+    constantes si certaines peuvent être changée. Cela implique forcément un
+    nouvel effort de conception d'implémentation. Cet indéterminisme dans la
+    conception est malheureusement nécessaire.
 \end{itemize}
 

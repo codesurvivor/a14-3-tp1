@@ -1,65 +1,127 @@
-\section{Implémentation}
+\section{Implémentation - \textsc{vhdl}}
 
-Cette section décrit un premier jet d'implémentation visant à déterminer un ordre de grandeur des performances atteignables et de la complexité du système.
+Cette section décrit un premier jet d'implémentation visant à déterminer un
+ordre de grandeur des performances atteignables et de la complexité du système.
 
 \subsection{Protocole}
-La communication entre les composants se fait par un protocole à deux phases. Deux fils (requête et acquittement) sont ajoutés au bus de données. Si ils sont au même niveau logique, le bus est considéré comme vide, sinon, il y a une donnée dessus. Ce protocole présente le désavantage de ne pas permettre de transmettre plus d'une donnée tous les deux cycles. En revanche, la conception de la FIFO est simplifiée.
+
+La communication entre les composants se fait par un protocole à deux phases.
+Deux fils (requête et acquittement) sont ajoutés au bus de données. Si ils sont
+au même niveau logique, le bus est considéré comme vide, sinon, il y a une
+donnée dessus. Ce protocole présente le désavantage de ne pas permettre de
+transmettre plus d'une donnée tous les deux cycles. En revanche, la conception
+de la FIFO est simplifiée.
 
 \subsection{FIFO}
-Un étage de la FIFO est composé d'un banc de registre contenant au plus une donnée. On ajoute deux bascules contrôlant respectivement le fil de requête de cet étage et le fil d'acquittement du fil de l'étage précédent. Sur un front montant i l'étage précédent est plein et le présent est vide, le banc de registre copie la donnée et change l'état des bascules de contrôle. L'étage précédent est maintenant vide et l'étage actuel est plein.
+
+Un étage de la FIFO est composé d'un banc de registre contenant au plus une
+donnée. On ajoute deux bascules contrôlant respectivement le fil de requête de
+cet étage et le fil d'acquittement du fil de l'étage précédent. Sur un front
+montant i l'étage précédent est plein et le présent est vide, le banc de
+registre copie la donnée et change l'état des bascules de contrôle. L'étage
+précédent est maintenant vide et l'étage actuel est plein.
 Une FIFO est composée d'une succession, éventuellement vide, d'étages.
 
 \subsection{Arbitre}
-On utilise un codage one-hot pour désigner l'indice de la FIFO choisie. l'indice $-1$ est codé par "$0\dots0$"
-\paragraph{Aléatoire}
-L'implémentation reprend le code SystemC. L'indice de la FIFO choisie est extrait sous forme binaire et converti. L'indice choisi est renouvellé à chaque coup d'horloge.
-\paragraph{Priorité fixe}
-Un indice est choisi si et seulement si la FIFO correspondant n'est pas vide et aucun des indice plus prioritaire n'est choisi.
-\paragraph{LRU}
-les indices sont stockés du moins récemment utilisé au plus récemment utilisé. L'indice en tête est choisi. Pour la mise à jour, un indice progresse d'une case vers le moins récemment utilisé si l'indice réellement choisi a été moins récemment utilisé.
-\paragraph{Priorité tournante}
-L'arbitre stocke le dernier indice utilisé et accorde la priorité au suivant. Un indice est choisi si et sulement si il n'est pas vide et il est prioritaire ou alors le précédent est prioritaire et vide ou alors le précesseur du précédent est prioritaire ou vide\ldots
-\paragraph{FIFO} Non implémenté.
 
+On utilise un codage one-hot pour désigner l'indice de la FIFO choisie. l'indice
+$-1$ est codé par "$0\dots0$"
+
+\paragraph{Aléatoire}
+
+L'implémentation reprend le code SystemC. L'indice de la FIFO choisie est
+extrait sous forme binaire et converti. L'indice choisi est renouvellé à chaque
+coup d'horloge.
+
+\paragraph{Priorité fixe}
+
+Un indice est choisi si et seulement si la FIFO correspondant n'est pas vide et
+aucun des indice plus prioritaire n'est choisi.
+
+\paragraph{LRU}
+
+les indices sont stockés du moins récemment utilisé au plus récemment utilisé.
+L'indice en tête est choisi. Pour la mise à jour, un indice progresse d'une case
+vers le moins récemment utilisé si l'indice réellement choisi a été moins
+récemment utilisé.
+
+\paragraph{Priorité tournante}
+
+L'arbitre stocke le dernier indice utilisé et accorde la priorité au suivant. Un
+indice est choisi si et sulement si il n'est pas vide et il est prioritaire ou
+alors le précédent est prioritaire et vide ou alors le précesseur du précédent
+est prioritaire ou vide\ldots
+
+\paragraph{FIFO} Non implémenté.
 
 \subsection{Routeur}
 
-Pour chaque donnée reçue, le routeur décode l'adresse et inverse le bit de requête de la sortie correspondante. Les bits d'acquittements sont simplement aggrégé par des porte XOR et les données sont dirigées vers toutes les sorties.
+Pour chaque donnée reçue, le routeur décode l'adresse et inverse le bit de
+requête de la sortie correspondante. Les bits d'acquittements sont simplement
+aggrégé par des porte XOR et les données sont dirigées vers toutes les sorties.
 
 \subsection{Performance et coût}
 
 \subsubsection{Ressources logiques}
-Le tableau \ref{perfs-sw-4} montre les ressources utilisées par un switch 4 vers 1 sur un FPGA Cyclone II. On remarque d'une part qu'en terme de ressources, les FIFOs sont rapidement les plus coûteuses (il y a quatre FIFO par switch et chaque étage a une largeur de $40+2$ bits). Ainsi, chaque étage de FIFO dans les switchs 8 vers 4 coûte $32*164=5248$ registres. Pour les switchs 4 vers 1, un étage n'utilise que 656 registres. Au total, le réseau complet avec des FIFOs de longueur 8 utilise de l'ordre de 50 000 registres.
 
-Cela n'est pas bloquant pour une utilisation ou une émulation sur FPGA. Le nombre d'entrée/sorties (1600) est beaucoup plus gênant.
+Le tableau \ref{perfs-sw-4} montre les ressources utilisées par un switch 4 vers
+1 sur un FPGA Cyclone II. On remarque d'une part qu'en terme de ressources, les
+FIFOs sont rapidement les plus coûteuses (il y a quatre FIFO par switch et
+chaque étage a une largeur de $40+2$ bits). Ainsi, chaque étage de FIFO dans les
+switchs 8 vers 4 coûte $32*164=5248$ registres. Pour les switchs 4 vers 1, un
+étage n'utilise que 656 registres. Au total, le réseau complet avec des FIFOs de
+longueur 8 utilise de l'ordre de 50 000 registres.
+Cela n'est pas bloquant pour une utilisation ou une émulation sur FPGA. Le
+nombre d'entrée/sorties (1600) est beaucoup plus gênant.
 
 \begin{table}
-\centering
-\begin{tabular}{|c|c|c|}
-\hline
-Nombre d'étages de la fifo & Nombre de registres & Nombre de blocs logiques \\
-\hline
-0 & 93 & 181 \\
-8 & 1405 & 258 \\
-16 &  2717 & 312 \\
-32 & 5341 & 452 \\
-\hline \hline
-éléments par étages & 164 & 8 \\
-autres éléments & 93 & 184 \\
-\hline
-\end{tabular}
-\caption{Ressources requises sur un Cyclone II par un switch 4 vers 1 selon la taille des FIFOs}
-\label{perfs-sw-4}
+  \centering
+  \begin{tabular}{|c|c|c|}
+    \hline
+    Nombre d'étages de la fifo & Nombre de registres & Nombre de blocs logiques \\
+    \hline
+    0 & 93 & 181 \\
+    8 & 1405 & 258 \\
+    16 &  2717 & 312 \\
+    32 & 5341 & 452 \\
+    \hline \hline
+    éléments par étages & 164 & 8 \\
+    autres éléments & 93 & 184 \\
+    \hline
+  \end{tabular}
+  \caption{Ressources requises sur un Cyclone II par un switch 4 vers 1 selon la taille des FIFOs}
+  \label{perfs-sw-4}
 \end{table}
 
 \subsubsection{Débit et latence}
-\`A cause du protocole, le débit maximal du circuit est limité à 1 élément par entrée/sortie par 2 cycles d'horloge.
 
-La latence minimum d'une FIFO de $N$ étages varie de $N$ cycles si la FIFO est vide à $2N$ si elle est pleine. Le routeur ajoute un cycle de latence et la sortie aussi. Finalement, la latence d'un switch est comprise entre $N+2$ et $2N+2$.
+\`A cause du protocole, le débit maximal du circuit est limité à 1 élément par
+entrée/sortie par 2 cycles d'horloge.
+
+La latence minimum d'une FIFO de $N$ étages varie de $N$ cycles si la FIFO est
+vide à $2N$ si elle est pleine. Le routeur ajoute un cycle de latence et la
+sortie aussi. Finalement, la latence d'un switch est comprise entre $N+2$ et
+$2N+2$.
 
 \subsubsection{Fréquence d'horloge}
-Compte tenu du cahier des charges, nous évaluons surtout la qualité de l'implémentation par sa fréquence d'horloge maximale. Le réseau entier étant trop gros (en terme d'entrées/sorties) pour les FPGAs Xilinx, nous n'avons pu que synthétiser, placer et router des morceaux du réseau. Nous supposons ensuite que, les interconnexions étant simples et les contraintes de placement pas trop fortes, la performance générale serait obtenue en gardant la moins bonne performance.
 
-Nous nous sommes intéressés aux switchs. Pour les switchs 4 vers 1, la fréquence maximale est de 180 MHz pour un FPGA Virtex 5 (XC5VFX70T). Pour les switchs 8 vers 4, la fréquence maximale est de 100 MHz sur un Virtex 5 et 170 MHz sur un Virtex 7. Le chemin critique part de la sortie de FIFOs, passe par la logique de choix des arbitreurs, le multiplexeur de ces choix, le multiplexeur vers les données de sorties et arrive sur la bascule de sortie. Nous n'avons pas eu le temps de découper ce chemin. C'est en théorie possible car les arbitreurs n'ont à faire des choix que un cycle sur deux. Pour des ASICs, on peut s'attendre, selon la technologie de fabrication, à une multiplication de la fréquence par au moins 3. Néanmoins, nous n'avons pas pu synthétiser notre circuit vers un ASIC.
+Compte tenu du cahier des charges, nous évaluons surtout la qualité de
+l'implémentation par sa fréquence d'horloge maximale. Le réseau entier étant
+trop gros (en terme d'entrées/sorties) pour les FPGAs Xilinx, nous n'avons pu
+que synthétiser, placer et router des morceaux du réseau. Nous supposons ensuite
+que, les interconnexions étant simples et les contraintes de placement pas trop
+fortes, la performance générale serait obtenue en gardant la moins bonne
+performance.
+
+Nous nous sommes intéressés aux switchs. Pour les switchs 4 vers 1, la fréquence
+maximale est de 180 MHz pour un FPGA Virtex 5 (XC5VFX70T). Pour les switchs 8
+vers 4, la fréquence maximale est de 100 MHz sur un Virtex 5 et 170 MHz sur un
+Virtex 7. Le chemin critique part de la sortie de FIFOs, passe par la logique de
+choix des arbitreurs, le multiplexeur de ces choix, le multiplexeur vers les
+données de sorties et arrive sur la bascule de sortie. Nous n'avons pas eu le
+temps de découper ce chemin. C'est en théorie possible car les arbitreurs n'ont
+à faire des choix que un cycle sur deux. Pour des ASICs, on peut s'attendre,
+selon la technologie de fabrication, à une multiplication de la fréquence par au
+moins 3. Néanmoins, nous n'avons pas pu synthétiser notre circuit vers un ASIC.
 
 
