@@ -81,8 +81,6 @@ public:
 
   stream_generator(::sc_core::sc_module_name name);
 
-  void generate(void);
-
   // Set the emission period (in cycle).
   inline void set_period(unsigned period)
   { _period = period; }
@@ -90,6 +88,10 @@ public:
   // Set the emission offset (in cycle).
   inline void set_offset(unsigned offset)
   { set_clock_counter(offset); }
+
+private:
+
+  void generate(void);
 };
 
 class burst_generator
@@ -102,8 +104,6 @@ public:
   typedef burst_generator SC_CURRENT_USER_MODULE;
 
   burst_generator(::sc_core::sc_module_name name);
-
-  void generate(void);
 
   // Set the emission period (in cycle).
   inline void set_burst(
@@ -119,6 +119,10 @@ public:
   // Set the emission offset (in cycle).
   void set_offset(unsigned offset)
   { set_clock_counter(offset); }
+
+private:
+
+  void generate(void);
 };
 
 } // noc
