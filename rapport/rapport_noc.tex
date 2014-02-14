@@ -4,15 +4,15 @@
 \usepackage[T1]{fontenc}
 \usepackage[francais]{babel}
 \usepackage[top=3cm, bottom=3cm, left=2.5cm, right=2.5cm]{geometry}
-\geometry{a4paper} 
+\geometry{a4paper}
 
-\usepackage{booktabs} 
-\usepackage{array} 
+\usepackage{booktabs}
+\usepackage{array}
 \usepackage{multirow}
-\usepackage{paralist} 
+\usepackage{paralist}
 \usepackage{graphicx}
 \usepackage{tabularx}
-\usepackage{verbatim} 
+\usepackage{verbatim}
 
 \usepackage[output-decimal-marker={,}]{siunitx}
 \usepackage{amsmath}
@@ -34,15 +34,26 @@
 
 \section{Objectifs}
 
-Les besoins croissants en bande passante de communication expliquent le recours aux technologies Network On Chip. Les réseaux sur puce offrent, en effet, des services plus étendus que les architectures à base de bus.
+Les besoins croissants en bande passante de communication expliquent le recours
+aux technologies Network On Chip. Les réseaux sur puce offrent, en effet, des
+services plus étendus que les architectures à base de bus.
 
-Dans le cadre général, la conception de la communication par réseaux commence par la définition d'un modèle de communication. Dans notre cas, il s'agit de 32 processeurs qui cherchent à communiquer de manière indifférenciée à 4 mémoires DDR2. Le sujet propose de diviser le réseau en deux sous-réseaux : une pour les communications des processeurs vers les mémoires (requêtes) et un autre pour les communication des mémoires vers les processeurs (réponses). Nous avons suivi cette proposition et nous sommes intéressés au premier sous réseau.
+
+Dans le cadre général, la conception de la communication par réseaux commence
+par la définition d'un modèle de communication. Dans notre cas, il s'agit de 32
+processeurs qui cherchent à communiquer de manière indifférenciée à 4 mémoires
+DDR2. Le sujet propose de diviser le réseau en deux sous-réseaux : une pour les
+communications des processeurs vers les mémoires (requêtes) et un autre pour les
+communication des mémoires vers les processeurs (réponses). Nous avons suivi
+cette proposition et nous sommes intéressés au premier sous réseau.
+
 
 Selon le cahier des charge, le réseau doit aussi :
 \begin{itemize}
-\item garantir un débit de 100 Mbits/s pour chaque processeur,
-\item garantir une latence maximale de 80 ns point à point,
-\item permettre de configurer le réseau pour pouvoir utiliser différentes politiques d'arbitrage.
+  \item garantir un débit de 100 Mbits/s pour chaque processeur,
+  \item garantir une latence maximale de 80 ns point à point,
+  \item permettre de configurer le réseau pour pouvoir utiliser différentes
+    politiques d'arbitrage.
 \end{itemize}
 
 \section{Architecture - Modélisation SystemC}
@@ -50,7 +61,33 @@ Selon le cahier des charge, le réseau doit aussi :
 Cette section décrit la modélisation du système en SystemC.
 
 \subsection{Génération du traffic}
-TODO: à compléter (structure des paquets, données, signal d'activation)
+
+Les paquets se présentent sous la forme suivante:
+\begin{itemize}
+  \item 32 bits (\texttt{int data}) de donnée.
+  \item 8 bits (\texttt{uint8\_t address}) d'adresse.
+  \item Un champ libre (\texttt{mutable void* extra}) qui permet de rajouter de
+    données de contexte suivant ce que l'on veut faire (tracing, statistics,
+    \ldots). Celui ci est rempli à différents endroits stratégiques
+    (générateur de trafic, routeur) par des callbacks fournis aux instances
+    concernées.
+\end{itemize}
+
+\vspace{0.5cm}
+
+Les générateurs de trafic implémentés héritent tous d'un base
+\texttt{noc::abstract\_traffic\_generator} qui leur permet :
+\begin{itemize}
+  \item D'émettre un paquet aléatoire : \texttt{void
+    emit\_random\_package(void)}. Cette fonction remplit le champs \texttt{data}
+    par une donnée aléatoire. En revanche entre deux appels, le champ
+    \texttt{addresse} fournit reste la même pendant une certaine durée, qui elle
+    est aléatoire. Ceci permet de simuler un trafic réaliste.
+  \item De pourvoir un callback de type
+    \texttt{std::function<void(noc::packet)>} qui sera appelé à la création de
+    chaque paquet.
+\end{itemize}
+
 
 \subsection{Routeur}
 Nous faisons correspondre à chaque entrée du système un module routeur, connecté à autant de FIFO qu'il y a de sorties au système.
@@ -131,7 +168,7 @@ Ce nombre est ensuite ramené entre 0 et le nombre de FIFOs non vides, ce qui in
 Cette section décrit un premier jet d'implémentation visant à déterminer un ordre de grandeur des performances atteignables et de la complexité du système.
 
 \subsection{Protocole}
-La communication entre les composants se fait par un protocole à deux phases. Deux fils (requête et acquittement) sont ajoutés au bus de données. Si ils sont au même niveau logique, le bus est considéré comme vide, sinon, il y a une donnée dessus. Ce protocole présente le désavantage de ne pas permettre de transmettre plus d'une donnée tous les deux cycles. En revanche, la conception de la FIFO est simplifiée.	
+La communication entre les composants se fait par un protocole à deux phases. Deux fils (requête et acquittement) sont ajoutés au bus de données. Si ils sont au même niveau logique, le bus est considéré comme vide, sinon, il y a une donnée dessus. Ce protocole présente le désavantage de ne pas permettre de transmettre plus d'une donnée tous les deux cycles. En revanche, la conception de la FIFO est simplifiée.
 
 \subsection{FIFO}
 Un étage de la FIFO est composé d'un banc de registre contenant au plus une donnée. On ajoute deux bascules contrôlant respectivement le fil de requête de cet étage et le fil d'acquittement du fil de l'étage précédent. Sur un front montant i l'étage précédent est plein et le présent est vide, le banc de registre copie la donnée et change l'état des bascules de contrôle. L'étage précédent est maintenant vide et l'étage actuel est plein.
@@ -192,11 +229,11 @@ Nous nous sommes intéressés aux switchs. Pour les switchs 4 vers 1, la fréque
 
 \section{Méthodologie}
 
-D'abord, il opportun de rappeler que ce projet a pour vocation de nous sensibiliser à la conception des MPOC pour une application donnée et dans un contexte donné. Mème si on a été amenés à concevoir une architecture symètrique, l'un des objectifs de ce module est de se démarquer de cette vision esthétique des systèmes on chip qui pousse à envisager des matrices régulières de communication et donc des architectures régulières.  
+D'abord, il opportun de rappeler que ce projet a pour vocation de nous sensibiliser à la conception des MPOC pour une application donnée et dans un contexte donné. Mème si on a été amenés à concevoir une architecture symètrique, l'un des objectifs de ce module est de se démarquer de cette vision esthétique des systèmes on chip qui pousse à envisager des matrices régulières de communication et donc des architectures régulières.
 
 \subsection{Contraintes}
 
-La conception se réalise par rapport à un espace de contraintes <Q,R,T>. 
+La conception se réalise par rapport à un espace de contraintes <Q,R,T>.
 
 Q designe les contraintes de qualité de service. Le modèle de communication à satisfaire est une communication indifférenciée des processeurs avec les mémoires avec des contraintes de débit et de latence.
 
@@ -213,10 +250,10 @@ La méthodologie proposée se décompose en 4 étapes détaillées ci-dessous :
 \item Extraction des caratéristiques de l'implémentation
 \item Simulation haut niveau et validation
 \end{enumerate}
- 
+
 \paragraph{Choix de l'espace de conception}
 Le but de cet étape est de définir les constantes et les variables qui seront utilisées dans l'exploration. Pour les constantes de conception, nous avons fixé un protocole, l'architecture des switchs et du routeur et une modèle. Les variables sont alors la taille des FIFOs et l'agencement des switchs.
- 
+
 On choisit \textit{a priori} un protocole car ce choix a une influence énorme sur les classes de composants. Si on avait plusieurs implémentations disponibles de chaque composant, le protocole aurait pu être une variable. Faute de temps et de ressources, nous avons fixé un protocole pour l'implémentation. Il nous faudrait encore un peu de temps pour faire coincider sur ce point le simulateur et l'implémentation.
 
 \paragraph{Affectation des variables}
@@ -273,7 +310,7 @@ Illustrons ceci avec un exemple. Une entreprise veut concevoir un produit qui co
 
 Pour réaliser un outil de génération d’architecture, il faudrait utiliser l’interfacce import/export de VNA Mentor Graphics qui supporte FIBEX XML. L’utilisation FIBEX parait adéquate la situation vu qu’il s’agit d’un format XML utilisé pour décrire des systèmes de communication orientée messages complexes. La réalisation de l’outil revient principalement à ètre capable de traduire des spécifications en entrée sous forme d’une description XML en sortie et de coupler cette étape à l’outil VNA. Les différentes étapes sont :
 \begin{enumerate}
-\item Décrire les modules demandés et une architecture de communication, qui répond aux spécifications mais non optimale, sous VNA Mentor Graphics. 
+\item Décrire les modules demandés et une architecture de communication, qui répond aux spécifications mais non optimale, sous VNA Mentor Graphics.
 \item Exporter la description de l’architecture sous format FIBEX XML.
 \item Réaliser l’étape 0 de l’algorithme d’optimisation sur la description XML.
 \item Importer l’architecture par l’outil VNA Mentor Graphics.
@@ -287,7 +324,7 @@ Les principales difficultés qui émergent de cet  exemple sont 1) lla descripti
 
 \`A partir de cette réflexion une nouvelle vision se dégage : celle d'un processus de conception où l'intervention de l'ingénieur est limitée par l'automatisation de modèlisation/simulation/optimisation pour les domaines respectifs.
 
-Jusqu'à présent l'innovation réside dans l'automatisation/optimisation de la conception pour chacune des disciplines séparément. En effet, l'optimisation pour chaque discipline pourrait prendre des contraintes qui découlent d'autres processus de conception parallèles, mais l'amélioration ne peut porter que sur les variables du processus en question.  
+Jusqu'à présent l'innovation réside dans l'automatisation/optimisation de la conception pour chacune des disciplines séparément. En effet, l'optimisation pour chaque discipline pourrait prendre des contraintes qui découlent d'autres processus de conception parallèles, mais l'amélioration ne peut porter que sur les variables du processus en question.
 
 \subsection{Simulation multiphysique}
 
@@ -311,7 +348,7 @@ Supposons que le problème de l'auto-conception puisse se poser comme un problè
 
 Dans notre méthodologie comme dans de nombreux flots de conception présentés en cours, la conception se fait par itérations : si le modèle ne correspond pas aux attentes, on l'ajuste. On est confronté à toutes les problématiques d'exploration et d'optimisation en grande dimension et il faut avoir recourt aux techniques appropriées. De manière tout à fait profane, il nous semble que le point clé est d'arriver à extrapoler les interdépendances des paramètres pour déterminer la direction d'un optimum et espérer une convergence vers un point intéressant. Le problème est que les interdépendances sont peut-être très chaotiques.
 
-Même si le concepteur peut espérer concevoir un système optimal au sens de Pareto, il n'a pas de mécanismes à sa disposition pour repousser la frontière. En effet, le front de Pareto est délimité par les IPs auxquelles il a accès. Il peut espérer concevoir un système optimal au sens de Pareto mais n'a pas de mécanismes à sa disposition pour repousser la frontière. Il n'a peut-être pas la compréhension suffisante des modèles pour discuter avec les fournisseurs d'un nouveau composant. 
+Même si le concepteur peut espérer concevoir un système optimal au sens de Pareto, il n'a pas de mécanismes à sa disposition pour repousser la frontière. En effet, le front de Pareto est délimité par les IPs auxquelles il a accès. Il peut espérer concevoir un système optimal au sens de Pareto mais n'a pas de mécanismes à sa disposition pour repousser la frontière. Il n'a peut-être pas la compréhension suffisante des modèles pour discuter avec les fournisseurs d'un nouveau composant.
 
 On voit apparaître la nécessité d'une dynamique entre les entité que l'on a nommées << concepteurs >> et les << fournisseurs >> pour permettre l'innovation. Il s'agit soit d'élargir les paramètres de conception (nouvelle technologie de circuits intégrés par exemple) ou de rajouter une dimension (circuits 3D par exemple). Il semble que les concepteurs puissent communiquer leur compréhension de la frontière, leurs besoins pour que les fournisseurs puissent chercher des axes de recherche. Malheureusement, comme aucun modèle de modèle n'est parfait, le format de modélisation de sera peut-être pas à même d'inclure ces nouveaux paramètres. Il faudra donc du temps et de l'argent pour que des nouvelles technologies soient complétement intégrées dans les process d'auto-conception. On peut donc supposer que les grands groupes qui se seront établis ne seront pas forcément moteurs dans le développement mais plutôt des intégrateurs d'innovations provenant de plus petites structures.
 
